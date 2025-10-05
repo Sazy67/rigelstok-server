@@ -1,4 +1,4 @@
-# Stok Takip Sistemi
+# Rigel Stok Takip Sistemi
 
 Modern web tabanlı stok yönetim sistemi. Excel tabanlı stok verilerinizi modern bir web uygulamasına dönüştürür.
 
@@ -162,13 +162,6 @@ stok-takip-sistemi/
 
 ## Geliştirme
 
-### Yeni Özellik Ekleme
-
-1. `.kiro/specs/stok-takip-sistemi/tasks.md` dosyasındaki görev listesini kontrol edin
-2. İlgili görevleri seçin ve implement edin
-3. Route'ları `routes/main.py` dosyasına ekleyin
-4. Template'leri `templates/` klasörüne ekleyin
-
 ### Test
 
 Uygulamayı test etmek için:
@@ -192,5 +185,6 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 5. Pull Request oluşturun
 
 ## Destek
-
+suatayaz@gmail.com
+https://x.com/suatayaz_
 Herhangi bir sorun yaşarsanız, lütfen GitHub Issues bölümünde bildirin.
