@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+
+{% block title %}Rezervasyonlar - Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='images/rigel-logo.png') }}" alt="Rigel Logo" height="32" class="me-3">
+            <h1 class="h3 mb-0">Rezervasyon Yönetimi</h1>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('main.rezervasyon_olustur_sayfa') }}" class="btn btn-success">
+                <i class="bi bi-bookmark-plus"></i> Yeni Rezervasyon
+            </a>
+            <a href="{{ url_for('main.stock_list') }}" class="btn btn-secondary">
+                <i class="bi bi-list-ul"></i> Stok Listesi
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Ürün / Rezerve Eden</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="Ürün kodu, adı veya rezerve eden...">
+                </div>
+                <div class="col-md-2">
+                    <label for="konum" class="form-label">Konum</label>
+                    <select class="form-select" id="konum" name="konum">
+                        <option value="">Tüm Konumlar</option>
+                        {% for loc in locations %}
+                        <option value="{{ loc.konum }}" {% if konum == loc.konum %}selected{% endif %}>
+                            {{ loc.konum }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="durum" class="form-label">Durum</label>
+                    <select class="form-select" id="durum" name="durum">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="AKTIF" {% if durum == 'AKTIF' %}selected{% endif %}>Aktif</option>
+                        <option value="IPTAL" {% if durum == 'IPTAL' %}selected{% endif %}>İptal</option>
+                        <option value="TAMAMLANDI" {% if durum == 'TAMAMLANDI' %}selected{% endif %}>Tamamlandı</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="rezerve_eden" class="form-label">Rezerve Eden</label>
+                    <select class="form-select" id="rezerve_eden" name="rezerve_eden">
+                        <option value="">Tüm Kullanıcılar</option>
+                        {% for user in users %}
+                        <option value="{{ user.rezerve_eden }}" {% if rezerve_eden == user.rezerve_eden %}selected{% endif %}>
+                            {{ user.rezerve_eden }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Filtrele
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sonuç Bilgisi -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-muted">
+            Toplam {{ total }} rezervasyon
+            {% if search or konum or durum or rezerve_eden %}
+                (filtrelenmiş)
+            {% endif %}
+        </span>
+        {% if search or konum or durum or rezerve_eden %}
+        <a href="{{ url_for('main.rezervasyonlar') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-x-circle"></i> Filtreleri Temizle
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Rezervasyon Tablosu -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Ürün Kodu</th>
+                            <th>Ürün Adı</th>
+                            <th>Renk</th>
+                            <th>Konum</th>
+                            <th>Adet</th>
+                            <th>Rezerve Eden</th>
+                            <th>Tarih</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rezervasyon in rezervasyonlar %}
+                        <tr>
+                            <td><strong>#{{ rezervasyon.id }}</strong></td>
+                            <td>{{ rezervasyon.urun_kodu }}</td>
+                            <td>{{ rezervasyon.urun_adi }}</td>
+                            <td>
+                                {% if rezervasyon.renk %}
+                                    <span class="badge bg-secondary">{{ rezervasyon.renk }}</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ rezervasyon.konum }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ rezervasyon.adet }} adet</span>
+                            </td>
+                            <td>{{ rezervasyon.rezerve_eden }}</td>
+                            <td>
+                                <small>
+                                    {% if rezervasyon.rezerve_tarihi %}
+                                        {% if rezervasyon.rezerve_tarihi is string %}
+                                            {{ rezervasyon.rezerve_tarihi }}
+                                        {% else %}
+                                            {{ rezervasyon.rezerve_tarihi.strftime('%d.%m.%Y %H:%M') }}
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if rezervasyon.durum == 'AKTIF' %}
+                                    <span class="badge bg-success">Aktif</span>
+                                {% elif rezervasyon.durum == 'IPTAL' %}
+                                    <span class="badge bg-danger">İptal</span>
+                                {% elif rezervasyon.durum == 'TAMAMLANDI' %}
+                                    <span class="badge bg-info">Tamamlandı</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    {% if rezervasyon.durum == 'AKTIF' %}
+                                        <button type="button" class="btn btn-outline-success rezervasyon-tamamla-btn" 
+                                                data-rezervasyon-id="{{ rezervasyon.id }}" 
+                                                data-urun-kodu="{{ rezervasyon.urun_kodu }}" 
+                                                data-adet="{{ rezervasyon.adet }}" 
+                                                title="Tamamla">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger rezervasyon-iptal-btn" 
+                                                data-rezervasyon-id="{{ rezervasyon.id }}" 
+                                                data-urun-kodu="{{ rezervasyon.urun_kodu }}" 
+                                                data-adet="{{ rezervasyon.adet }}" 
+                                                title="İptal Et">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-outline-info rezervasyon-detay-btn" 
+                                            data-rezervasyon-id="{{ rezervasyon.id }}" 
+                                            title="Detay">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">
+                                {% if search or konum or durum or rezerve_eden %}
+                                    Filtrelere uygun rezervasyon bulunamadı.
+                                {% else %}
+                                    Henüz rezervasyon bulunmuyor.
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sayfalama -->
+    {% if total > per_page %}
+    <nav aria-label="Sayfa navigasyonu" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('main.rezervasyonlar', page=prev_num, search=search, konum=konum, durum=durum, rezerve_eden=rezerve_eden) }}">
+                    <i class="bi bi-chevron-left"></i> Önceki
+                </a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">
+                    Sayfa {{ page }} / {{ ((total - 1) // per_page) + 1 }}
+                </span>
+            </li>
+            
+            {% if has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('main.rezervasyonlar', page=next_num, search=search, konum=konum, durum=durum, rezerve_eden=rezerve_eden) }}">
+                    Sonraki <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Rezervasyon Tamamlama Modal -->
+<div class="modal fade" id="tamamlaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rezervasyonu Tamamla</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="tamamlaMessage"></p>
+                <div class="mb-3">
+                    <label for="tamamlaAciklama" class="form-label">Açıklama</label>
+                    <textarea class="form-control" id="tamamlaAciklama" rows="3" placeholder="Rezervasyon tamamlama açıklaması..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-success" onclick="tamamlaRezervasyonOnay()">
+                    <i class="bi bi-check-circle"></i> Tamamla ve Stoktan Çıkar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rezervasyon İptal Modal -->
+<div class="modal fade" id="iptalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rezervasyonu İptal Et</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="iptalMessage"></p>
+                <div class="mb-3">
+                    <label for="iptalAciklama" class="form-label">İptal Nedeni</label>
+                    <textarea class="form-control" id="iptalAciklama" rows="3" placeholder="Rezervasyon iptal nedeni..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                <button type="button" class="btn btn-danger" onclick="iptalRezervasyonOnay()">
+                    <i class="bi bi-x-circle"></i> İptal Et
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rezervasyon Detay Modal -->
+<div class="modal fade" id="detayModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rezervasyon Detayı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detayContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Yükleniyor...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedRezervasyonId = null;
+
+// Event delegation for rezervasyon buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('rezervasyon-tamamla-btn') || e.target.closest('.rezervasyon-tamamla-btn')) {
+            const button = e.target.classList.contains('rezervasyon-tamamla-btn') ? e.target : e.target.closest('.rezervasyon-tamamla-btn');
+            const id = button.getAttribute('data-rezervasyon-id');
+            const urunKodu = button.getAttribute('data-urun-kodu');
+            const adet = button.getAttribute('data-adet');
+            tamamlaRezervasyonModal(id, urunKodu, adet);
+        }
+        
+        if (e.target.classList.contains('rezervasyon-iptal-btn') || e.target.closest('.rezervasyon-iptal-btn')) {
+            const button = e.target.classList.contains('rezervasyon-iptal-btn') ? e.target : e.target.closest('.rezervasyon-iptal-btn');
+            const id = button.getAttribute('data-rezervasyon-id');
+            const urunKodu = button.getAttribute('data-urun-kodu');
+            const adet = button.getAttribute('data-adet');
+            iptalRezervasyonModal(id, urunKodu, adet);
+        }
+        
+        if (e.target.classList.contains('rezervasyon-detay-btn') || e.target.closest('.rezervasyon-detay-btn')) {
+            const button = e.target.classList.contains('rezervasyon-detay-btn') ? e.target : e.target.closest('.rezervasyon-detay-btn');
+            const id = button.getAttribute('data-rezervasyon-id');
+            detayRezervasyonModal(id);
+        }
+    });
+});
+
+// Rezervasyon tamamlama modal
+function tamamlaRezervasyonModal(id, urunKodu, adet) {
+    selectedRezervasyonId = id;
+    document.getElementById('tamamlaMessage').textContent = 
+        `${urunKodu} için ${adet} adet rezervasyonu tamamlanacak ve stoktan çıkarılacak. Emin misiniz?`;
+    document.getElementById('tamamlaAciklama').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('tamamlaModal'));
+    modal.show();
+}
+
+// Rezervasyon iptal modal
+function iptalRezervasyonModal(id, urunKodu, adet) {
+    selectedRezervasyonId = id;
+    document.getElementById('iptalMessage').textContent = 
+        `${urunKodu} için ${adet} adet rezervasyonu iptal edilecek. Emin misiniz?`;
+    document.getElementById('iptalAciklama').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('iptalModal'));
+    modal.show();
+}
+
+// Rezervasyon tamamlama onay
+function tamamlaRezervasyonOnay() {
+    if (!selectedRezervasyonId) return;
+    
+    const aciklama = document.getElementById('tamamlaAciklama').value;
+    
+    fetch('/api/rezervasyon-tamamla', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            rezervasyon_id: selectedRezervasyonId,
+            aciklama: aciklama
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Rezervasyon başarıyla tamamlandı!');
+            location.reload();
+        } else {
+            alert('Hata: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('İstek hatası: ' + error.message);
+    });
+}
+
+// Rezervasyon iptal onay
+function iptalRezervasyonOnay() {
+    if (!selectedRezervasyonId) return;
+    
+    const aciklama = document.getElementById('iptalAciklama').value;
+    
+    fetch('/api/rezervasyon-iptal', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            rezervasyon_id: selectedRezervasyonId,
+            aciklama: aciklama
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Rezervasyon başarıyla iptal edildi!');
+            location.reload();
+        } else {
+            alert('Hata: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('İstek hatası: ' + error.message);
+    });
+}
+
+// Rezervasyon detay modal
+function detayRezervasyonModal(id) {
+    const modal = new bootstrap.Modal(document.getElementById('detayModal'));
+    const content = document.getElementById('detayContent');
+    
+    // Loading göster
+    content.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Yükleniyor...</span>
+            </div>
+            <p class="mt-2">Rezervasyon detayları yükleniyor...</p>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // AJAX ile detay bilgilerini getir
+    fetch(`/api/rezervasyon-detay/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                content.innerHTML = createDetayHTML(data.rezervasyon, data.hareketler);
+            } else {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Hata: ${data.message}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Detay bilgileri yüklenirken hata oluştu: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// Detay HTML oluştur
+function createDetayHTML(rezervasyon, hareketler) {
+    let html = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Rezervasyon Bilgileri</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>ID:</strong></td><td>#${rezervasyon.id}</td></tr>
+                    <tr><td><strong>Ürün Kodu:</strong></td><td>${rezervasyon.urun_kodu}</td></tr>
+                    <tr><td><strong>Ürün Adı:</strong></td><td>${rezervasyon.urun_adi}</td></tr>
+                    <tr><td><strong>Renk:</strong></td><td>${rezervasyon.renk || '-'}</td></tr>
+                    <tr><td><strong>Konum:</strong></td><td>${rezervasyon.konum}</td></tr>
+                    <tr><td><strong>Adet:</strong></td><td>${rezervasyon.adet}</td></tr>
+                    <tr><td><strong>Rezerve Eden:</strong></td><td>${rezervasyon.rezerve_eden}</td></tr>
+                    <tr><td><strong>Durum:</strong></td><td>
+                        <span class="badge ${rezervasyon.durum === 'AKTIF' ? 'bg-success' : rezervasyon.durum === 'IPTAL' ? 'bg-danger' : 'bg-info'}">
+                            ${rezervasyon.durum === 'AKTIF' ? 'Aktif' : rezervasyon.durum === 'IPTAL' ? 'İptal' : 'Tamamlandı'}
+                        </span>
+                    </td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Zaman Bilgileri</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Rezerve Tarihi:</strong></td><td>${new Date(rezervasyon.rezerve_tarihi).toLocaleString('tr-TR')}</td></tr>
+                    <tr><td><strong>Son Güncelleme:</strong></td><td>${new Date(rezervasyon.son_guncelleme).toLocaleString('tr-TR')}</td></tr>
+                </table>
+                
+                <h6>Açıklama</h6>
+                <p class="border rounded p-2 bg-light">${rezervasyon.aciklama || 'Açıklama bulunmuyor.'}</p>
+            </div>
+        </div>
+    `;
+    
+    if (hareketler && hareketler.length > 0) {
+        html += `
+            <hr>
+            <h6>Rezervasyon Hareketleri</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Hareket</th>
+                            <th>Kullanıcı</th>
+                            <th>Açıklama</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        hareketler.forEach(h => {
+            let badgeClass = 'bg-secondary';
+            let hareketText = h.hareket_tipi;
+            
+            if (h.hareket_tipi === 'REZERVE') {
+                badgeClass = 'bg-primary';
+                hareketText = 'Rezerve Edildi';
+            } else if (h.hareket_tipi === 'IPTAL') {
+                badgeClass = 'bg-danger';
+                hareketText = 'İptal Edildi';
+            } else if (h.hareket_tipi === 'TAMAMLANDI') {
+                badgeClass = 'bg-success';
+                hareketText = 'Tamamlandı';
+            }
+            
+            html += `
+                <tr>
+                    <td><small>${new Date(h.tarih).toLocaleString('tr-TR')}</small></td>
+                    <td><span class="badge ${badgeClass}">${hareketText}</span></td>
+                    <td>${h.kullanici || '-'}</td>
+                    <td>${h.aciklama || '-'}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    return html;
+}
+</script>
+{% endblock %}

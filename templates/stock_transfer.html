@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Stok Transferi - Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='images/rigel-logo.png') }}" alt="Rigel Logo" height="32" class="me-3">
+            <h1 class="h3 mb-0">Stok Transferi</h1>
+        </div>
+        <div>
+            <a href="{{ url_for('main.stock_list') }}" class="btn btn-secondary me-2">
+                <i class="bi bi-list-ul"></i> Stok Listesi
+            </a>
+            <a href="{{ url_for('main.stock_entry') }}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Stok Girişi
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-arrow-left-right"></i> Konum Arası Stok Transferi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="stockTransferForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="urun_kodu" class="form-label">Ürün Kodu *</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" class="form-control autocomplete-input" id="urun_kodu" name="urun_kodu" 
+                                           required style="text-transform: uppercase;" placeholder="Ürün kodu ara...">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="renk" class="form-label">Renk</label>
+                                <input type="text" class="form-control" id="renk" name="renk" 
+                                       placeholder="Renk seçin..." list="color_list">
+                                <datalist id="color_list">
+                                    {% for color in colors %}
+                                    <option value="{{ color.renk }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="kaynak_konum" class="form-label">Kaynak Konum *</label>
+                                <input type="text" class="form-control" id="kaynak_konum" name="kaynak_konum" required 
+                                       placeholder="Nereden transfer edilecek..." list="location_list">
+                                <datalist id="location_list">
+                                    {% for location in locations %}
+                                    <option value="{{ location.konum }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="hedef_konum" class="form-label">Hedef Konum *</label>
+                                <input type="text" class="form-control" id="hedef_konum" name="hedef_konum" required 
+                                       placeholder="Nereye transfer edilecek..." list="location_list">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="adet" class="form-label">Transfer Adedi *</label>
+                                <input type="number" class="form-control" id="adet" name="adet" 
+                                       min="1" step="1" required value="1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="islem_tarihi" class="form-label">İşlem Tarihi *</label>
+                                <input type="date" class="form-control" id="islem_tarihi" name="islem_tarihi" 
+                                       required value="{{ today }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label text-muted">Transfer Gösterimi</label>
+                                <div class="form-control d-flex align-items-center justify-content-center bg-light" style="height: 38px;">
+                                    <span id="transferDisplay" class="text-muted">Kaynak → Hedef</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="aciklama" class="form-label">Açıklama</label>
+                            <textarea class="form-control" id="aciklama" name="aciklama" rows="2" 
+                                      placeholder="Transfer sebebi (isteğe bağlı)"></textarea>
+                        </div>
+
+                        <!-- Kaynak stok bilgisi -->
+                        <div class="alert alert-info" id="sourceStockInfo" style="display: none;">
+                            <h6><i class="bi bi-info-circle"></i> Kaynak Konum Stok Bilgisi:</h6>
+                            <div id="sourceStockDetails"></div>
+                        </div>
+
+                        <!-- Hedef stok bilgisi -->
+                        <div class="alert alert-secondary" id="targetStockInfo" style="display: none;">
+                            <h6><i class="bi bi-info-circle"></i> Hedef Konum Stok Bilgisi:</h6>
+                            <div id="targetStockDetails"></div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Temizle
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-arrow-left-right"></i> Transfer Yap
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Transfer İşlemi Hakkında
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6>Transfer İşlemi:</h6>
+                        <ul class="mb-0">
+                            <li>Kaynak konumdan stok düşülür</li>
+                            <li>Hedef konuma stok eklenir</li>
+                            <li>Eğer hedef konumda aynı ürün varsa birleştirilir</li>
+                            <li>Tüm işlemler hareket kayıtlarında tutulur</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6>Dikkat Edilecekler:</h6>
+                        <ul class="mb-0">
+                            <li>Transfer miktarı kaynak stoktan fazla olamaz</li>
+                            <li>Kaynak ve hedef konum aynı olamaz</li>
+                            <li>Ürün kodu, renk ve kaynak konum kombinasyonu bulunmalıdır</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-diagram-2"></i> Transfer Önizlemesi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <div class="row">
+                            <div class="col-5">
+                                <div class="border rounded p-2 bg-light">
+                                    <small class="text-muted">Kaynak</small>
+                                    <div class="fw-bold" id="previewSource">-</div>
+                                </div>
+                            </div>
+                            <div class="col-2 d-flex align-items-center justify-content-center">
+                                <i class="bi bi-arrow-right fs-3 text-primary"></i>
+                            </div>
+                            <div class="col-5">
+                                <div class="border rounded p-2 bg-light">
+                                    <small class="text-muted">Hedef</small>
+                                    <div class="fw-bold" id="previewTarget">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="border rounded p-2">
+                                <small class="text-muted">Transfer Miktarı</small>
+                                <div class="h5 mb-0 text-success" id="previewAmount">0 adet</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Kaynak stok sorgulama
+function checkSourceStock() {
+    const urunKodu = document.getElementById('urun_kodu').value.trim();
+    const renk = document.getElementById('renk').value.trim();
+    const kaynakKonum = document.getElementById('kaynak_konum').value.trim();
+    
+    if (urunKodu && kaynakKonum) {
+        fetch(`/api/check-stock?urun_kodu=${encodeURIComponent(urunKodu)}&renk=${encodeURIComponent(renk)}&konum=${encodeURIComponent(kaynakKonum)}`)
+            .then(response => response.json())
+            .then(data => {
+                const sourceInfo = document.getElementById('sourceStockInfo');
+                const sourceDetails = document.getElementById('sourceStockDetails');
+                const submitBtn = document.getElementById('submitBtn');
+                
+                if (data.success && data.stock) {
+                    sourceDetails.innerHTML = `
+                        <strong>Ürün:</strong> ${data.stock.urun_adi}<br>
+                        <strong>Mevcut Adet:</strong> <span class="text-success">${data.stock.adet}</span><br>
+                        <strong>Toplam Ağırlık:</strong> ${data.stock.toplam_kg} kg
+                    `;
+                    sourceInfo.style.display = 'block';
+                    sourceInfo.className = 'alert alert-success';
+                    submitBtn.disabled = false;
+                } else {
+                    sourceDetails.innerHTML = `
+                        <span class="text-danger">Bu kaynak konumda stok bulunamadı!</span>
+                    `;
+                    sourceInfo.style.display = 'block';
+                    sourceInfo.className = 'alert alert-danger';
+                    submitBtn.disabled = true;
+                }
+            })
+            .catch(error => {
+                console.error('Kaynak stok sorgulama hatası:', error);
+                document.getElementById('sourceStockInfo').style.display = 'none';
+            });
+    } else {
+        document.getElementById('sourceStockInfo').style.display = 'none';
+        document.getElementById('submitBtn').disabled = false;
+    }
+}
+
+// Hedef stok sorgulama (bilgi amaçlı)
+function checkTargetStock() {
+    const urunKodu = document.getElementById('urun_kodu').value.trim();
+    const renk = document.getElementById('renk').value.trim();
+    const hedefKonum = document.getElementById('hedef_konum').value.trim();
+    
+    if (urunKodu && hedefKonum) {
+        fetch(`/api/check-stock?urun_kodu=${encodeURIComponent(urunKodu)}&renk=${encodeURIComponent(renk)}&konum=${encodeURIComponent(hedefKonum)}`)
+            .then(response => response.json())
+            .then(data => {
+                const targetInfo = document.getElementById('targetStockInfo');
+                const targetDetails = document.getElementById('targetStockDetails');
+                
+                if (data.success && data.stock) {
+                    targetDetails.innerHTML = `
+                        <strong>Mevcut Adet:</strong> ${data.stock.adet}<br>
+                        <span class="text-info">Transfer sonrası bu stokla birleştirilecek</span>
+                    `;
+                    targetInfo.style.display = 'block';
+                } else {
+                    targetDetails.innerHTML = `
+                        <span class="text-muted">Bu hedef konumda stok yok - yeni kayıt oluşturulacak</span>
+                    `;
+                    targetInfo.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('targetStockInfo').style.display = 'none';
+            });
+    } else {
+        document.getElementById('targetStockInfo').style.display = 'none';
+    }
+}
+
+// Önizleme güncelleme
+function updatePreview() {
+    const kaynak = document.getElementById('kaynak_konum').value.trim();
+    const hedef = document.getElementById('hedef_konum').value.trim();
+    const adet = document.getElementById('adet').value;
+    
+    document.getElementById('previewSource').textContent = kaynak || '-';
+    document.getElementById('previewTarget').textContent = hedef || '-';
+    document.getElementById('previewAmount').textContent = `${adet} adet`;
+    
+    // Transfer display güncelle
+    const transferDisplay = document.getElementById('transferDisplay');
+    if (kaynak && hedef) {
+        transferDisplay.textContent = `${kaynak} → ${hedef}`;
+        transferDisplay.className = 'text-primary fw-bold';
+    } else {
+        transferDisplay.textContent = 'Kaynak → Hedef';
+        transferDisplay.className = 'text-muted';
+    }
+}
+
+// Event listener'ları ekle
+document.getElementById('urun_kodu').addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+    checkSourceStock();
+    checkTargetStock();
+});
+
+document.getElementById('renk').addEventListener('input', function() {
+    checkSourceStock();
+    checkTargetStock();
+});
+
+document.getElementById('kaynak_konum').addEventListener('input', function() {
+    checkSourceStock();
+    updatePreview();
+});
+
+document.getElementById('hedef_konum').addEventListener('input', function() {
+    checkTargetStock();
+    updatePreview();
+    
+    // Aynı konum kontrolü
+    const kaynak = document.getElementById('kaynak_konum').value.trim();
+    if (this.value.trim() === kaynak && kaynak) {
+        this.setCustomValidity('Hedef konum kaynak konumla aynı olamaz!');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+document.getElementById('adet').addEventListener('input', updatePreview);
+
+// Form validasyonu
+document.getElementById('stockTransferForm').addEventListener('submit', function(e) {
+    const urunKodu = document.getElementById('urun_kodu').value.trim();
+    const kaynakKonum = document.getElementById('kaynak_konum').value.trim();
+    const hedefKonum = document.getElementById('hedef_konum').value.trim();
+    const adet = parseInt(document.getElementById('adet').value);
+    
+    if (!urunKodu || !kaynakKonum || !hedefKonum) {
+        e.preventDefault();
+        alert('Ürün kodu, kaynak konum ve hedef konum zorunludur!');
+        return;
+    }
+    
+    if (kaynakKonum === hedefKonum) {
+        e.preventDefault();
+        alert('Kaynak ve hedef konum aynı olamaz!');
+        return;
+    }
+    
+    if (adet <= 0) {
+        e.preventDefault();
+        alert('Transfer adedi 0\'dan büyük olmalıdır!');
+        return;
+    }
+    
+    // Onay sor
+    const confirmMessage = `${urunKodu} kodlu ürün için ${adet} adet transfer yapılacak.\n` +
+                          `${kaynakKonum} → ${hedefKonum}\n\nOnaylıyor musunuz?`;
+    
+    if (!confirm(confirmMessage)) {
+        e.preventDefault();
+    }
+});
+
+// Form reset edildiğinde bilgileri temizle
+document.getElementById('stockTransferForm').addEventListener('reset', function() {
+    setTimeout(function() {
+        document.getElementById('sourceStockInfo').style.display = 'none';
+        document.getElementById('targetStockInfo').style.display = 'none';
+        document.getElementById('submitBtn').disabled = false;
+        updatePreview();
+    }, 10);
+});
+
+// Sayfa yüklendiğinde önizlemeyi başlat
+document.addEventListener('DOMContentLoaded', updatePreview);
+</script>
+{% endblock %}

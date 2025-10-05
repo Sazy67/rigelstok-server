@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+
+{% block title %}Stok Hareketleri - Stok Takip Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+.movement-card {
+    transition: all 0.3s ease;
+    border: none;
+    margin-bottom: 1rem;
+}
+
+.movement-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.movement-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.movement-entry { border-left: 4px solid #28a745; }
+.movement-exit { border-left: 4px solid #dc3545; }
+.movement-transfer { border-left: 4px solid #17a2b8; }
+
+.search-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.filter-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stats-bar {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+    .movement-card .row > div {
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <!-- Sayfa Başlığı -->
+    <div class="search-section">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="h2 mb-2">
+                    <i class="bi bi-clock-history me-2"></i>Stok Hareketleri
+                </h1>
+                <p class="mb-0 opacity-90">Tüm stok giriş, çıkış ve transfer işlemlerini görüntüleyin ve filtreleyin</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <div class="d-flex flex-column align-items-md-end">
+                    <div class="mb-2">
+                        <span class="badge bg-light text-dark me-2">
+                            <i class="bi bi-list-ul me-1"></i>Toplam: {{ total }}
+                        </span>
+                        {% if urun_kodu %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-filter me-1"></i>{{ urun_kodu }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtreleme Formu -->
+    <div class="filter-card">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="urun_kodu" class="form-label">
+                    <i class="bi bi-box me-1"></i>Ürün Seçin
+                </label>
+                <select class="form-select" id="urun_kodu" name="urun_kodu">
+                    <option value="">Tüm Ürünler</option>
+                    {% for product in products %}
+                    <option value="{{ product.urun_kodu }}" 
+                            {% if urun_kodu == product.urun_kodu %}selected{% endif %}>
+                        {{ product.urun_kodu }} - {{ product.urun_adi or 'Ürün Adı Yok' }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="hareket_tipi" class="form-label">
+                    <i class="bi bi-arrow-up-down me-1"></i>Hareket Tipi
+                </label>
+                <select class="form-select" id="hareket_tipi" name="hareket_tipi">
+                    <option value="">Tüm Hareketler</option>
+                    <option value="GIRIS" {% if hareket_tipi == 'GIRIS' %}selected{% endif %}>
+                        <i class="bi bi-plus-circle"></i> Giriş
+                    </option>
+                    <option value="CIKIS" {% if hareket_tipi == 'CIKIS' %}selected{% endif %}>
+                        <i class="bi bi-dash-circle"></i> Çıkış
+                    </option>
+                    <option value="TRANSFER" {% if hareket_tipi == 'TRANSFER' %}selected{% endif %}>
+                        <i class="bi bi-arrow-left-right"></i> Transfer
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="search" class="form-label">
+                    <i class="bi bi-search me-1"></i>Arama
+                </label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search or '' }}" placeholder="Ürün kodu, açıklama...">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>Filtrele
+                </button>
+            </div>
+        </form>
+        
+        {% if urun_kodu or hareket_tipi or search %}
+        <div class="mt-3 text-center">
+            <a href="{{ url_for('main.stock_movements') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x-circle me-1"></i>Filtreleri Temizle
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sonuç İstatistikleri -->
+    {% if movements %}
+    <div class="stats-bar">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <small class="text-muted d-block">Toplam Hareket</small>
+                <strong class="h5 text-primary">{{ total }}</strong>
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted d-block">Bu Sayfada</small>
+                <strong class="h5 text-info">{{ movements|length }}</strong>
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted d-block">Sayfa</small>
+                <strong class="h5 text-warning">{{ page }}</strong>
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted d-block">Toplam Sayfa</small>
+                <strong class="h5 text-success">{{ ((total - 1) // per_page + 1) if total > 0 else 1 }}</strong>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Hareketler Listesi -->
+    {% if movements %}
+    <div class="row">
+        {% for movement in movements %}
+        <div class="col-12">
+            <div class="card movement-card 
+                        {% if movement.hareket_tipi == 'GIRIS' %}movement-entry
+                        {% elif movement.hareket_tipi == 'CIKIS' %}movement-exit
+                        {% else %}movement-transfer{% endif %}">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <!-- Ürün Bilgileri -->
+                        <div class="col-lg-3 col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    {% if movement.hareket_tipi == 'GIRIS' %}
+                                        <div class="bg-success bg-opacity-10 text-success rounded-circle p-2">
+                                            <i class="bi bi-plus-circle fs-5"></i>
+                                        </div>
+                                    {% elif movement.hareket_tipi == 'CIKIS' %}
+                                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2">
+                                            <i class="bi bi-dash-circle fs-5"></i>
+                                        </div>
+                                    {% else %}
+                                        <div class="bg-info bg-opacity-10 text-info rounded-circle p-2">
+                                            <i class="bi bi-arrow-left-right fs-5"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <strong class="text-primary">{{ movement.urun_kodu }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {% if movement.urun_adi %}
+                                            {{ movement.urun_adi[:30] }}{% if movement.urun_adi|length > 30 %}...{% endif %}
+                                        {% else %}
+                                            Ürün Adı Yok
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hareket Detayları -->
+                        <div class="col-lg-2 col-md-6 text-center">
+                            <span class="badge movement-badge
+                                        {% if movement.hareket_tipi == 'GIRIS' %}bg-success
+                                        {% elif movement.hareket_tipi == 'CIKIS' %}bg-danger
+                                        {% else %}bg-info{% endif %}">
+                                {% if movement.hareket_tipi == 'GIRIS' %}
+                                    <i class="bi bi-arrow-up me-1"></i>Giriş
+                                {% elif movement.hareket_tipi == 'CIKIS' %}
+                                    <i class="bi bi-arrow-down me-1"></i>Çıkış
+                                {% else %}
+                                    <i class="bi bi-arrow-left-right me-1"></i>Transfer
+                                {% endif %}
+                            </span>
+                            <br>
+                            <strong class="h5 mt-1 d-block">{{ movement.miktar }}</strong>
+                            <small class="text-muted">adet</small>
+                        </div>
+
+                        <!-- Stok Değişimi -->
+                        <div class="col-lg-2 col-md-6 text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span class="badge bg-light text-dark me-1">{{ movement.onceki_miktar or 0 }}</span>
+                                <i class="bi bi-arrow-right mx-1"></i>
+                                <span class="badge 
+                                           {% if movement.yeni_miktar > (movement.onceki_miktar or 0) %}bg-success
+                                           {% elif movement.yeni_miktar < (movement.onceki_miktar or 0) %}bg-warning
+                                           {% else %}bg-secondary{% endif %}">
+                                    {{ movement.yeni_miktar or 0 }}
+                                </span>
+                            </div>
+                            <small class="text-muted d-block mt-1">Stok Değişimi</small>
+                        </div>
+
+                        <!-- Konum -->
+                        <div class="col-lg-2 col-md-6">
+                            <div class="text-center">
+                                {% if movement.konum %}
+                                    <i class="bi bi-geo-alt-fill text-warning"></i>
+                                    <strong class="d-block">{{ movement.konum }}</strong>
+                                {% else %}
+                                    <i class="bi bi-question-circle text-muted"></i>
+                                    <span class="text-muted">Konum Yok</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Tarih ve Kullanıcı -->
+                        <div class="col-lg-3 col-md-12">
+                            <div class="text-end">
+                                <div class="mb-1">
+                                    <i class="bi bi-calendar3 text-primary me-1"></i>
+                                    <strong>{{ movement.tarih_str }}</strong>
+                                </div>
+                                <div class="mb-1">
+                                    <i class="bi bi-clock text-info me-1"></i>
+                                    {{ movement.saat_str }}
+                                </div>
+                                {% if movement.kullanici %}
+                                <div>
+                                    <i class="bi bi-person text-secondary me-1"></i>
+                                    <span class="text-muted">{{ movement.kullanici }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Açıklama -->
+                    {% if movement.aciklama %}
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="bg-light rounded p-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-chat-text me-1"></i>
+                                    {{ movement.aciklama }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Sayfalama -->
+    {% if total > per_page %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Sayfa navigasyonu">
+            <ul class="pagination">
+                <!-- Önceki butonu -->
+                {% if has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main.stock_movements', 
+                        page=prev_num, urun_kodu=urun_kodu, hareket_tipi=hareket_tipi, search=search) }}">
+                        <i class="bi bi-chevron-left"></i> Önceki
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        <i class="bi bi-chevron-left"></i> Önceki
+                    </span>
+                </li>
+                {% endif %}
+
+                <!-- Sayfa numaraları -->
+                {% set total_pages = ((total - 1) // per_page + 1) %}
+                {% set start_page = [page - 2, 1]|max %}
+                {% set end_page = [page + 2, total_pages]|min %}
+                
+                <!-- İlk sayfa -->
+                {% if start_page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main.stock_movements', 
+                        page=1, urun_kodu=urun_kodu, hareket_tipi=hareket_tipi, search=search) }}">
+                        1
+                    </a>
+                </li>
+                {% if start_page > 2 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+                {% endif %}
+                
+                <!-- Mevcut sayfa etrafındaki sayfalar -->
+                {% for p in range(start_page, end_page + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    {% if p == page %}
+                    <span class="page-link">
+                        {{ p }}
+                    </span>
+                    {% else %}
+                    <a class="page-link" href="{{ url_for('main.stock_movements', 
+                        page=p, urun_kodu=urun_kodu, hareket_tipi=hareket_tipi, search=search) }}">
+                        {{ p }}
+                    </a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+                
+                <!-- Son sayfa -->
+                {% if end_page < total_pages %}
+                {% if end_page < total_pages - 1 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main.stock_movements', 
+                        page=total_pages, urun_kodu=urun_kodu, hareket_tipi=hareket_tipi, search=search) }}">
+                        {{ total_pages }}
+                    </a>
+                </li>
+                {% endif %}
+
+                <!-- Sonraki butonu -->
+                {% if has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main.stock_movements', 
+                        page=next_num, urun_kodu=urun_kodu, hareket_tipi=hareket_tipi, search=search) }}">
+                        Sonraki <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        Sonraki <i class="bi bi-chevron-right"></i>
+                    </span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    
+    <!-- Sayfa bilgisi -->
+    <div class="text-center mt-2">
+        <small class="text-muted">
+            Sayfa {{ page }} / {{ total_pages }} - Toplam {{ total }} hareket (Sayfada {{ movements|length }} hareket)
+        </small>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Boş Durum -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="bi bi-clock-history display-1 text-muted"></i>
+        </div>
+        <h3 class="text-muted">
+            {% if urun_kodu or hareket_tipi or search %}
+                Filtreye Uygun Hareket Bulunamadı
+            {% else %}
+                Henüz Stok Hareketi Yok
+            {% endif %}
+        </h3>
+        <p class="text-muted mb-4">
+            {% if urun_kodu or hareket_tipi or search %}
+                Farklı filtre seçenekleri deneyebilir veya filtreleri temizleyebilirsiniz.
+            {% else %}
+                İlk stok girişi, çıkışı veya transferi yaptığınızda burada görünecektir.
+            {% endif %}
+        </p>
+        
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+            {% if urun_kodu or hareket_tipi or search %}
+            <a href="{{ url_for('main.stock_movements') }}" class="btn btn-outline-primary">
+                <i class="bi bi-x-circle me-1"></i>Filtreleri Temizle
+            </a>
+            {% endif %}
+            <a href="{{ url_for('main.stock_entry') }}" class="btn btn-success">
+                <i class="bi bi-plus-circle me-1"></i>Stok Girişi Yap
+            </a>
+            <a href="{{ url_for('main.stock_list') }}" class="btn btn-info">
+                <i class="bi bi-list-ul me-1"></i>Stok Listesi
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Form otomatik submit - ürün seçildiğinde
+document.getElementById('urun_kodu').addEventListener('change', function() {
+    if (this.value) {
+        this.closest('form').submit();
+    }
+});
+
+// Enter tuşu ile arama
+document.getElementById('search').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        this.closest('form').submit();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Ayarlar - Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='images/rigel-logo.png') }}" alt="Rigel Logo" height="32" class="me-3">
+            <h1 class="h3 mb-0">Sistem Ayarları</h1>
+        </div>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-house"></i> Ana Sayfa
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Excel Export/Import Ayarları -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-arrow-down-up"></i> Excel Veri Yönetimi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Tüm stok verilerinizi Excel olarak indirin ve düzenleyin.</p>
+                    <ul class="list-unstyled small text-muted">
+                        <li><i class="bi bi-check text-success"></i> Tüm stokları Excel'e aktar</li>
+                        <li><i class="bi bi-check text-success"></i> Düzenleyip geri yükle</li>
+                        <li><i class="bi bi-check text-success"></i> Veritabanını güncelle</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.export_all_stocks') }}" class="btn btn-info btn-sm">
+                            <i class="bi bi-download"></i> Tüm Stokları İndir
+                        </a>
+                        <button class="btn btn-outline-info btn-sm" onclick="showImportModal()">
+                            <i class="bi bi-upload"></i> Excel Yükle ve Güncelle
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Excel Import Ayarları -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-excel"></i> Excel Import
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Excel dosyalarından stok verilerini toplu olarak içe aktarın.</p>
+                    <ul class="list-unstyled small text-muted">
+                        <li><i class="bi bi-check text-success"></i> Toplu veri yükleme</li>
+                        <li><i class="bi bi-check text-success"></i> Otomatik format kontrolü</li>
+                        <li><i class="bi bi-check text-success"></i> Güvenli veri aktarımı</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('main.excel_import') }}" class="btn btn-primary w-100">
+                        <i class="bi bi-upload"></i> Excel Dosyası Yükle
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kritik Stok Ayarları -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Kritik Stok Ayarları
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Her ürün için kritik stok sınırlarını belirleyin ve yönetin.</p>
+                    <ul class="list-unstyled small text-muted">
+                        <li><i class="bi bi-check text-success"></i> Ürün bazında kritik sınır belirleme</li>
+                        <li><i class="bi bi-check text-success"></i> Toplu düzenleme imkanı</li>
+                        <li><i class="bi bi-check text-success"></i> Anlık durum görüntüleme</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('main.settings_critical_stock') }}" class="btn btn-warning w-100">
+                        <i class="bi bi-gear"></i> Kritik Stok Ayarlarını Yönet
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sistem Ayarları -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-tools"></i> Sistem Ayarları
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Genel sistem ayarlarını yönetin.</p>
+                    <ul class="list-unstyled small text-muted">
+                        <li><i class="bi bi-check text-success"></i> Kullanıcı yetkileri</li>
+                        <li><i class="bi bi-check text-success"></i> Yedekleme ayarları</li>
+                        <li><i class="bi bi-info text-primary"></i> Yakında gelecek</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-outline-secondary w-100" disabled>
+                        <i class="bi bi-clock"></i> Yakında Gelecek
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rapor Ayarları -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-text"></i> Rapor Ayarları
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Rapor formatları ve otomatik raporları yapılandırın.</p>
+                    <ul class="list-unstyled small text-muted">
+                        <li><i class="bi bi-check text-success"></i> Excel formatları</li>
+                        <li><i class="bi bi-check text-success"></i> Otomatik rapor gönderimi</li>
+                        <li><i class="bi bi-info text-primary"></i> Yakında gelecek</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-outline-success w-100" disabled>
+                        <i class="bi bi-clock"></i> Yakında Gelecek
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bildirim Ayarları -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bell"></i> Bildirim Ayarları
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">E-posta ve sistem bildirimlerini yönetin.</p>
+                    <ul class="list-unstyled small text-muted">
+                        <li><i class="bi bi-check text-success"></i> Kritik stok bildirimleri</li>
+                        <li><i class="bi bi-check text-success"></i> E-posta ayarları</li>
+                        <li><i class="bi bi-info text-primary"></i> Yakında gelecek</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-outline-primary w-100" disabled>
+                        <i class="bi bi-clock"></i> Yakında Gelecek
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i> Sistem İstatistikleri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <i class="bi bi-box-seam text-primary fs-2"></i>
+                                <h4 class="mt-2">Aktif Özellikler</h4>
+                                <p class="text-muted">Kritik Stok Yönetimi</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <i class="bi bi-clock text-warning fs-2"></i>
+                                <h4 class="mt-2">Geliştiriliyor</h4>
+                                <p class="text-muted">5 Yeni Özellik</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <i class="bi bi-shield-check text-success fs-2"></i>
+                                <h4 class="mt-2">Güvenlik</h4>
+                                <p class="text-muted">Aktif ve Güncel</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <i class="bi bi-speedometer2 text-info fs-2"></i>
+                                <h4 class="mt-2">Performans</h4>
+                                <p class="text-muted">Optimize Edilmiş</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manual Excel Import Modal -->
+<div id="importModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:0; border-radius:12px; width:85%; max-width:650px; max-height:85%; overflow-y:auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+        <!-- Modal Header -->
+        <div style="background:#17a2b8; color:white; padding:18px 24px; border-radius:12px 12px 0 0; display:flex; justify-content:space-between; align-items:center;">
+            <h5 style="margin:0; font-weight:600; font-size:18px;">
+                <i class="bi bi-upload me-2"></i> Excel Dosyası Yükle ve Veritabanını Güncelle
+            </h5>
+            <button onclick="closeImportModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; font-size:24px; cursor:pointer; padding:4px; width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                ×
+            </button>
+        </div>
+        
+        <!-- Modal Body -->
+        <form method="POST" action="{{ url_for('main.import_and_update_stocks') }}" enctype="multipart/form-data" style="padding:24px;">
+            <!-- Warning Alert -->
+            <div style="background:#fff3cd; border:1px solid #ffeaa7; border-radius:8px; padding:18px; margin-bottom:24px; color:#856404;">
+                <h6 style="margin:0 0 12px 0; font-weight:600; color:#b8860b;">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Önemli Uyarı
+                </h6>
+                <ul style="margin:0; padding-left:20px; line-height:1.6;">
+                    <li>Bu işlem <strong>mevcut veritabanını tamamen güncelleyecektir</strong></li>
+                    <li>Yüklediğiniz Excel dosyası yeni ana veri kaynağı olacaktır</li>
+                    <li>Lütfen sadece "İndir" butonuyla aldığınız dosyayı düzenleyip yükleyin</li>
+                    <li>İşlemden önce mevcut verilerinizi yedeklemenizi öneririz</li>
+                </ul>
+            </div>
+            
+            <!-- File Input -->
+            <div style="margin-bottom:24px;">
+                <label for="excel_file" style="display:block; margin-bottom:8px; font-weight:600; color:#495057;">Excel Dosyası Seçin</label>
+                <input type="file" id="excel_file" name="excel_file" accept=".xlsx,.xls" required 
+                       style="width:100%; padding:12px; border:2px solid #dee2e6; border-radius:8px; background:white; font-size:14px; transition:border-color 0.2s;" 
+                       onfocus="this.style.borderColor='#17a2b8'" onblur="this.style.borderColor='#dee2e6'">
+                <small style="color:#6c757d; font-size:13px; margin-top:4px; display:block;">Yalnızca .xlsx ve .xls formatları desteklenir</small>
+            </div>
+            
+            <!-- Info Alert -->
+            <div style="background:#d1ecf1; border:1px solid #bee5eb; border-radius:8px; padding:18px; margin-bottom:24px; color:#0c5460;">
+                <h6 style="margin:0 0 10px 0; font-weight:600; color:#0a4d54;">
+                    <i class="bi bi-info-circle me-2"></i> Dosya Formatı:
+                </h6>
+                <p style="margin:0 0 8px 0; line-height:1.5;">Excel dosyanızda şu kolonlar olmalıdır:</p>
+                <div style="background:#f8f9fa; padding:8px 12px; border-radius:6px; font-family:monospace; font-size:12px; overflow-x:auto; border:1px solid #e9ecef;">
+                    urun_kodu, urun_adi, sistem_seri, renk, uzunluk, mt_kg, boy_kg, adet, toplam_kg, konum, rezervasyon_notu, kritik_stok_siniri
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div style="display:flex; gap:12px; justify-content:flex-end; border-top:1px solid #dee2e6; padding-top:20px; margin-top:24px;">
+                <button type="button" onclick="closeImportModal()" 
+                        style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:500; transition:all 0.2s;" 
+                        onmouseover="this.style.background='#545b62'" onmouseout="this.style.background='#6c757d'">
+                    <i class="bi bi-x-circle me-1"></i> İptal
+                </button>
+                <button type="submit" 
+                        style="background:#dc3545; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:500; transition:all 0.2s;" 
+                        onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
+                    <i class="bi bi-upload me-1"></i> Yükle ve Veritabanını Güncelle
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showImportModal() {
+    const modal = document.getElementById('importModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImportModal() {
+    const modal = document.getElementById('importModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    
+    // Reset form
+    const form = modal.querySelector('form');
+    if (form) {
+        form.reset();
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('importModal');
+    if (e.target === modal) {
+        closeImportModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImportModal();
+    }
+});
+</script>
+{% endblock %}

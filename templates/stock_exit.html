@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Stok Çıkışı - Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='images/rigel-logo.png') }}" alt="Rigel Logo" height="32" class="me-3">
+            <h1 class="h3 mb-0">Stok Çıkışı</h1>
+        </div>
+        <div>
+            <a href="{{ url_for('main.stock_list') }}" class="btn btn-secondary me-2">
+                <i class="bi bi-list-ul"></i> Stok Listesi
+            </a>
+            <a href="{{ url_for('main.stock_entry') }}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Stok Girişi
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-dash-circle"></i> Stok Çıkış İşlemi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="stockExitForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="urun_kodu" class="form-label">Ürün Kodu *</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" class="form-control autocomplete-input" id="urun_kodu" name="urun_kodu" 
+                                           required style="text-transform: uppercase;" placeholder="Ürün kodu ara...">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="renk" class="form-label">Renk</label>
+                                <input type="text" class="form-control" id="renk" name="renk" 
+                                       placeholder="Renk seçin..." list="color_list">
+                                <datalist id="color_list">
+                                    {% for color in colors %}
+                                    <option value="{{ color.renk }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="konum" class="form-label">Konum *</label>
+                                <input type="text" class="form-control" id="konum" name="konum" required 
+                                       placeholder="Örn: B1, M4, B12..." list="location_list">
+                                <datalist id="location_list">
+                                    {% for location in locations %}
+                                    <option value="{{ location.konum }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="adet" class="form-label">Çıkış Adedi *</label>
+                                <input type="number" class="form-control" id="adet" name="adet" 
+                                       min="1" step="1" required value="1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="islem_tarihi" class="form-label">İşlem Tarihi *</label>
+                                <input type="date" class="form-control" id="islem_tarihi" name="islem_tarihi" 
+                                       required value="{{ today }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="aciklama" class="form-label">Açıklama</label>
+                            <textarea class="form-control" id="aciklama" name="aciklama" rows="3" 
+                                      placeholder="Çıkış sebebi (örn: Satış, Transfer, Fire...)"></textarea>
+                        </div>
+
+                        <!-- Mevcut stok bilgisi -->
+                        <div class="alert alert-info" id="stockInfo" style="display: none;">
+                            <h6><i class="bi bi-info-circle"></i> Mevcut Stok Bilgisi:</h6>
+                            <div id="stockDetails"></div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Temizle
+                            </button>
+                            <button type="submit" class="btn btn-danger" id="submitBtn">
+                                <i class="bi bi-dash-circle"></i> Stok Çıkışı Yap
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Önemli Bilgiler
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6>Dikkat Edilecek Hususlar:</h6>
+                        <ul class="mb-0">
+                            <li>Çıkış yapılacak ürün, renk ve konum kombinasyonu stokta bulunmalıdır</li>
+                            <li>Çıkış miktarı mevcut stoktan fazla olamaz</li>
+                            <li>Tüm stok çıkışları kalıcı olarak kaydedilir</li>
+                            <li>İptal edilen işlemler için tekrar giriş yapılması gerekir</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6>Stok Sorgulama:</h6>
+                        <p class="mb-0">Ürün kodu, renk ve konum seçtiğinizde mevcut stok miktarı otomatik olarak gösterilecektir.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history"></i> Son İşlemler
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-muted text-center">
+                        <i class="bi bi-hourglass-split"></i>
+                        <p>Son stok çıkış işlemleri burada görünecektir.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Mevcut stok sorgulama
+function checkCurrentStock() {
+    const urunKodu = document.getElementById('urun_kodu').value.trim();
+    const renk = document.getElementById('renk').value.trim();
+    const konum = document.getElementById('konum').value.trim();
+    
+    if (urunKodu && konum) {
+        // AJAX ile stok sorgula
+        fetch(`/api/check-stock?urun_kodu=${encodeURIComponent(urunKodu)}&renk=${encodeURIComponent(renk)}&konum=${encodeURIComponent(konum)}`)
+            .then(response => response.json())
+            .then(data => {
+                const stockInfo = document.getElementById('stockInfo');
+                const stockDetails = document.getElementById('stockDetails');
+                const submitBtn = document.getElementById('submitBtn');
+                
+                if (data.success && data.stock) {
+                    stockDetails.innerHTML = `
+                        <strong>Ürün:</strong> ${data.stock.urun_adi}<br>
+                        <strong>Mevcut Adet:</strong> <span class="text-success">${data.stock.adet}</span><br>
+                        <strong>Toplam Ağırlık:</strong> ${data.stock.toplam_kg} kg
+                    `;
+                    stockInfo.style.display = 'block';
+                    stockInfo.className = 'alert alert-success';
+                    submitBtn.disabled = false;
+                } else {
+                    stockDetails.innerHTML = `
+                        <span class="text-danger">Bu ürün, renk ve konum kombinasyonunda stok bulunamadı!</span>
+                    `;
+                    stockInfo.style.display = 'block';
+                    stockInfo.className = 'alert alert-danger';
+                    submitBtn.disabled = true;
+                }
+            })
+            .catch(error => {
+                console.error('Stok sorgulama hatası:', error);
+                document.getElementById('stockInfo').style.display = 'none';
+            });
+    } else {
+        document.getElementById('stockInfo').style.display = 'none';
+        document.getElementById('submitBtn').disabled = false;
+    }
+}
+
+// Event listener'ları ekle
+document.getElementById('urun_kodu').addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+    checkCurrentStock();
+});
+document.getElementById('renk').addEventListener('input', checkCurrentStock);
+document.getElementById('konum').addEventListener('input', checkCurrentStock);
+
+// Form validasyonu
+document.getElementById('stockExitForm').addEventListener('submit', function(e) {
+    const urunKodu = document.getElementById('urun_kodu').value.trim();
+    const konum = document.getElementById('konum').value.trim();
+    const adet = parseInt(document.getElementById('adet').value);
+    const aciklama = document.getElementById('aciklama').value.trim();
+    
+    if (!urunKodu || !konum) {
+        e.preventDefault();
+        alert('Ürün kodu ve konum zorunludur!');
+        return;
+    }
+    
+    if (adet <= 0) {
+        e.preventDefault();
+        alert('Çıkış adedi 0\'dan büyük olmalıdır!');
+        return;
+    }
+    
+    // Onay sor
+    const confirmMessage = `${urunKodu} kodlu ürün için ${adet} adet stok çıkışı yapılacak.` + 
+                          (aciklama ? `\nAçıklama: ${aciklama}` : '') + 
+                          `\n\nOnaylıyor musunuz?`;
+    
+    if (!confirm(confirmMessage)) {
+        e.preventDefault();
+    }
+});
+
+// Form reset edildiğinde bilgileri temizle
+document.getElementById('stockExitForm').addEventListener('reset', function() {
+    setTimeout(function() {
+        document.getElementById('stockInfo').style.display = 'none';
+        document.getElementById('submitBtn').disabled = false;
+    }, 10);
+});
+</script>
+{% endblock %}

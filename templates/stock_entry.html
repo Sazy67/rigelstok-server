@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Yeni Ürün Ekleme - Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='images/rigel-logo.png') }}" alt="Rigel Logo" height="32" class="me-3">
+            <h1 class="h3 mb-0">Yeni Ürün Ekleme</h1>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('main.stock_add') }}" class="btn btn-outline-success">
+                <i class="bi bi-plus-circle"></i> Mevcut Stoka Ekle
+            </a>
+            <a href="{{ url_for('main.stock_list') }}" class="btn btn-secondary">
+                <i class="bi bi-list-ul"></i> Stok Listesi
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-plus-square"></i> Yeni Ürün Ekleme
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="stockEntryForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="urun_kodu" class="form-label">Ürün Kodu *</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" class="form-control autocomplete-input" id="urun_kodu" name="urun_kodu" 
+                                           required style="text-transform: uppercase;" placeholder="Ürün kodu ara...">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="urun_adi" class="form-label">Ürün Adı *</label>
+                                <input type="text" class="form-control" id="urun_adi" name="urun_adi" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="sistem_seri" class="form-label">Sistem Seri</label>
+                                <input type="text" class="form-control" id="sistem_seri" name="sistem_seri">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="renk" class="form-label">Renk</label>
+                                <input type="text" class="form-control" id="renk" name="renk" 
+                                       placeholder="Renk girin..." list="color_list">
+                                <datalist id="color_list">
+                                    {% for color in colors %}
+                                    <option value="{{ color.renk }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="uzunluk" class="form-label">Uzunluk (mm)</label>
+                                <input type="number" class="form-control" id="uzunluk" name="uzunluk" 
+                                       min="0" step="1" value="0">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="mt_kg" class="form-label">MT/KG</label>
+                                <input type="number" class="form-control" id="mt_kg" name="mt_kg" 
+                                       min="0" step="0.001" value="0">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="boy_kg" class="form-label">BOY KG (Otomatik)</label>
+                                <input type="number" class="form-control" id="boy_kg" name="boy_kg" 
+                                       readonly tabindex="-1" style="background-color: #f8f9fa;">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="adet" class="form-label">Adet *</label>
+                                <input type="number" class="form-control" id="adet" name="adet" 
+                                       min="1" step="1" required value="1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="toplam_kg" class="form-label">Toplam KG (Otomatik)</label>
+                                <input type="number" class="form-control" id="toplam_kg" name="toplam_kg" 
+                                       readonly tabindex="-1" style="background-color: #f8f9fa;">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="islem_tarihi" class="form-label">İşlem Tarihi *</label>
+                                <input type="date" class="form-control" id="islem_tarihi" name="islem_tarihi" 
+                                       required value="{{ today }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="konum" class="form-label">Konum *</label>
+                                <input type="text" class="form-control" id="konum" name="konum" required 
+                                       placeholder="Örn: B1, M4, B12..." list="location_list">
+                                <datalist id="location_list">
+                                    {% for location in locations %}
+                                    <option value="{{ location.konum }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Temizle
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Yeni Ürün Ekle
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Hesaplama Bilgileri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6>Otomatik Hesaplamalar:</h6>
+                        <ul class="mb-0">
+                            <li><strong>BOY KG</strong> = Uzunluk ÷ 1000 × MT/KG</li>
+                            <li><strong>Toplam KG</strong> = Adet × BOY KG</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6>Önemli Notlar:</h6>
+                        <ul class="mb-0">
+                            <li>Bu sayfa <strong>sadece yeni ürünler</strong> için kullanılır</li>
+                            <li>Mevcut ürüne stok eklemek için <strong>"Mevcut Stoka Ekle"</strong> butonunu kullanın</li>
+                            <li>Ürün kodu ve ürün adı zorunludur</li>
+                            <li>Aynı ürün kodu, renk ve konum kombinasyonu varsa mevcut stoka eklenir</li>
+                            <li>Tüm stok hareketleri otomatik kaydedilir</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calculator"></i> Hesaplama Önizleme
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <small class="text-muted">BOY KG</small>
+                                <div class="h5 mb-0" id="preview_boy_kg">0.000</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <small class="text-muted">Toplam KG</small>
+                                <div class="h5 mb-0" id="preview_toplam_kg">0.000</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Otomatik hesaplama fonksiyonları
+function calculateBoyKg() {
+    const uzunluk = parseFloat(document.getElementById('uzunluk').value) || 0;
+    const mtKg = parseFloat(document.getElementById('mt_kg').value) || 0;
+    const boyKg = (uzunluk / 1000) * mtKg;
+    
+    document.getElementById('boy_kg').value = boyKg.toFixed(3);
+    document.getElementById('preview_boy_kg').textContent = boyKg.toFixed(3);
+    
+    calculateToplamKg();
+}
+
+function calculateToplamKg() {
+    const adet = parseInt(document.getElementById('adet').value) || 0;
+    const boyKg = parseFloat(document.getElementById('boy_kg').value) || 0;
+    const toplamKg = adet * boyKg;
+    
+    document.getElementById('toplam_kg').value = toplamKg.toFixed(3);
+    document.getElementById('preview_toplam_kg').textContent = toplamKg.toFixed(3);
+}
+
+// Event listener'ları ekle
+document.getElementById('uzunluk').addEventListener('input', calculateBoyKg);
+document.getElementById('mt_kg').addEventListener('input', calculateBoyKg);
+document.getElementById('adet').addEventListener('input', calculateToplamKg);
+
+// Form reset edildiğinde hesaplamaları sıfırla
+document.getElementById('stockEntryForm').addEventListener('reset', function() {
+    setTimeout(function() {
+        document.getElementById('boy_kg').value = '0.000';
+        document.getElementById('toplam_kg').value = '0.000';
+        document.getElementById('preview_boy_kg').textContent = '0.000';
+        document.getElementById('preview_toplam_kg').textContent = '0.000';
+    }, 10);
+});
+
+// Ürün kodu otomatik büyük harf
+document.getElementById('urun_kodu').addEventListener('input', function(e) {
+    e.target.value = e.target.value.toUpperCase();
+});
+
+// Form validasyonu
+document.getElementById('stockEntryForm').addEventListener('submit', function(e) {
+    const urunKodu = document.getElementById('urun_kodu').value.trim();
+    const urunAdi = document.getElementById('urun_adi').value.trim();
+    const adet = parseInt(document.getElementById('adet').value);
+    
+    if (!urunKodu || !urunAdi) {
+        e.preventDefault();
+        alert('Ürün kodu ve ürün adı zorunludur!');
+        return;
+    }
+    
+    if (adet <= 0) {
+        e.preventDefault();
+        alert('Adet 0\'dan büyük olmalıdır!');
+        return;
+    }
+    
+    // Onay sor
+    if (!confirm(`${urunKodu} kodlu ürün için ${adet} adet stok girişi yapılacak. Onaylıyor musunuz?`)) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

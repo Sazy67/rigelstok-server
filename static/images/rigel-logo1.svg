@@ -1,0 +1,14 @@
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="120" height="40" rx="8" fill="#1e40af" opacity="0.1"/>
+  
+  <!-- Star icon (Rigel is a star) -->
+  <g transform="translate(8, 8)">
+    <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" 
+             fill="#1e40af" stroke="#ffffff" stroke-width="1"/>
+  </g>
+  
+  <!-- Text RIGEL -->
+  <text x="32" y="16" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1e40af">RIGEL</text>
+  <text x="32" y="30" font-family="Arial, sans-serif" font-size="10" fill="#6b7280">STOK TAKİP</text>
+</svg>

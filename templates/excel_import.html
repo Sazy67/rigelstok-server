@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Excel Import - Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Excel Import</h1>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Ana Sayfaya Dön
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-excel"></i> Excel Dosyası Yükle
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="importForm">
+                        <div class="mb-3">
+                            <label for="excel_file" class="form-label">Excel Dosyası Seçin</label>
+                            <input type="file" class="form-control" id="excel_file" name="excel_file" 
+                                   accept=".xlsx,.xls" required>
+                            <div class="form-text">
+                                Sadece .xlsx ve .xls formatındaki dosyalar kabul edilir. Maksimum dosya boyutu: 16MB
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-upload"></i> Dosyayı Yükle ve İşle
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Import Bilgileri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>Excel Dosya Formatı:</h6>
+                    <ul class="small">
+                        <li>Sayfa adı: <strong>"3"</strong></li>
+                        <li>Veri aralığı: <strong>Y7:AI357 (sütun 25-35)</strong></li>
+                        <li>Y sütunu (25): Ürün Kodu</li>
+                        <li>Z sütunu (26): Tedarikçi</li>
+                        <li>AA sütunu (27): Sistem Seri</li>
+                        <li>AB sütunu (28): Ürün Adı</li>
+                        <li>AC sütunu (29): Renk</li>
+                        <li>AD sütunu (30): Uzunluk</li>
+                        <li>AE sütunu (31): MT/KG</li>
+                        <li>AF sütunu (32): BOY KG</li>
+                        <li>AG sütunu (33): Adet</li>
+                        <li>AH sütunu (34): Toplam KG</li>
+                        <li>AI sütunu (35): Konum</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>Import Kuralları:</h6>
+                    <ul class="small">
+                        <li>Ürün kodu ve ürün adı zorunludur</li>
+                        <li>Aynı ürün kodu, renk ve konum kombinasyonu varsa güncellenir</li>
+                        <li>BOY KG ve TOPLAM KG otomatik hesaplanır</li>
+                        <li>Tüm stok hareketleri kaydedilir</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Önemli Notlar
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>Dikkat:</strong> Import işlemi mevcut verileri güncelleyebilir. 
+                        İşlem öncesi mevcut verilerinizi yedeklemeniz önerilir.
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Bilgi:</strong> Import işlemi tamamlandıktan sonra 
+                        sonuç raporu gösterilecektir.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Yükleniyor...</span>
+                </div>
+                <h5>Excel dosyası işleniyor...</h5>
+                <p class="text-muted">Lütfen bekleyin, bu işlem birkaç dakika sürebilir.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('importForm').addEventListener('submit', function(e) {
+    // Loading modal'ı göster
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    loadingModal.show();
+    
+    // Submit butonunu deaktive et
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> İşleniyor...';
+});
+
+// Dosya seçildiğinde bilgi göster
+document.getElementById('excel_file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'alert alert-info mt-2';
+        fileInfo.innerHTML = `
+            <strong>Seçilen dosya:</strong> ${file.name}<br>
+            <strong>Boyut:</strong> ${fileSize} MB<br>
+            <strong>Tip:</strong> ${file.type}
+        `;
+        
+        // Önceki bilgi varsa kaldır
+        const existingInfo = document.querySelector('.alert-info');
+        if (existingInfo && existingInfo !== fileInfo) {
+            existingInfo.remove();
+        }
+        
+        // Yeni bilgiyi ekle
+        e.target.parentNode.appendChild(fileInfo);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Kullanıcı Yönetimi - Stok Takip Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.role-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.user-stats {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.add-user-form {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <!-- Sayfa Başlığı -->
+    <div class="user-stats">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-2">
+                    <i class="bi bi-people me-2"></i>Kullanıcı Yönetimi
+                </h1>
+                <p class="mb-0 opacity-90">Sistem kullanıcılarını yönetin ve yetkilendirin</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="mb-0">{{ users|length }}</h4>
+                        <small>Toplam Kullanıcı</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="mb-0">{{ active_users }}</h4>
+                        <small>Aktif Kullanıcı</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yeni Kullanıcı Ekleme Formu -->
+    <div class="add-user-form">
+        <h5 class="mb-3">
+            <i class="bi bi-person-plus me-2"></i>Yeni Kullanıcı Ekle
+        </h5>
+        <form method="POST" action="{{ url_for('main.add_user') }}">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="new_username" class="form-label">Kullanıcı Adı</label>
+                        <input type="text" class="form-control" id="new_username" name="username" 
+                               placeholder="Kullanıcı adı" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Şifre</label>
+                        <input type="password" class="form-control" id="new_password" name="password" 
+                               placeholder="Şifre" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="new_role" class="form-label">Rol</label>
+                        <select class="form-select" id="new_role" name="role" required>
+                            <option value="user">Kullanıcı (Sadece Rapor Görüntüleme)</option>
+                            <option value="admin">Admin (Tam Yetki)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="bi bi-plus-circle me-1"></i>Ekle
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Kullanıcılar Listesi -->
+    <div class="row">
+        {% for user in users %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card user-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-person-circle me-2 text-primary"></i>
+                            {{ user.kullanici_adi }}
+                        </h6>
+                        <span class="badge role-badge 
+                                   {% if user.rol == 'admin' %}bg-success
+                                   {% else %}bg-info{% endif %}">
+                            {% if user.rol == 'admin' %}
+                                <i class="bi bi-shield-check me-1"></i>Admin
+                            {% else %}
+                                <i class="bi bi-person me-1"></i>Kullanıcı
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Durum</small>
+                            {% if user.aktif %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i>Aktif
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>Pasif
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Kayıt</small>
+                            <small>{{ user.olusturma_tarihi[:10] if user.olusturma_tarihi }}</small>
+                        </div>
+                    </div>
+                    
+                    {% if user.son_giris %}
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>
+                            Son Giriş: {{ user.son_giris[:16] }}
+                        </small>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            {% if user.kullanici_adi != 'admin' %}
+                            <form method="POST" action="{{ url_for('main.toggle_user_status', user_id=user.id) }}" 
+                                  style="display:inline;">
+                                <button type="submit" class="btn btn-sm w-100 
+                                              {% if user.aktif %}btn-outline-warning
+                                              {% else %}btn-outline-success{% endif %}"
+                                        onclick="return confirm('Kullanıcı durumunu değiştirmek istediğinizden emin misiniz?')">
+                                    {% if user.aktif %}
+                                        <i class="bi bi-pause"></i> Pasifleştir
+                                    {% else %}
+                                        <i class="bi bi-play"></i> Aktifleştir
+                                    {% endif %}
+                                </button>
+                            </form>
+                            {% else %}
+                            <button class="btn btn-sm btn-outline-secondary w-100" disabled>
+                                <i class="bi bi-shield-lock"></i> Korumalı
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="col-6">
+                            {% if user.kullanici_adi != 'admin' %}
+                            <form method="POST" action="{{ url_for('main.delete_user', user_id=user.id) }}" 
+                                  style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100"
+                                        onclick="return confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')">
+                                    <i class="bi bi-trash"></i> Sil
+                                </button>
+                            </form>
+                            {% else %}
+                            <button class="btn btn-sm btn-outline-secondary w-100" disabled>
+                                <i class="bi bi-shield-lock"></i> Silinemez
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if not users %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-people display-1 text-muted"></i>
+                <h3 class="text-muted mt-3">Henüz Kullanıcı Yok</h3>
+                <p class="text-muted">Yukarıdaki form ile yeni kullanıcı ekleyebilirsiniz.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Kullanıcı Rolleri Açıklaması -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Kullanıcı Rolleri ve Yetkiler
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-success">
+                                <i class="bi bi-shield-check me-2"></i>Admin Yetkiler
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check text-success me-2"></i>Tüm sayfalar</li>
+                                <li><i class="bi bi-check text-success me-2"></i>Stok ekleme/çıkarma</li>
+                                <li><i class="bi bi-check text-success me-2"></i>Excel import/export</li>
+                                <li><i class="bi bi-check text-success me-2"></i>Kullanıcı yönetimi</li>
+                                <li><i class="bi bi-check text-success me-2"></i>Sistem ayarları</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-info">
+                                <i class="bi bi-person me-2"></i>Kullanıcı Yetkiler
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check text-success me-2"></i>Sadece Stok Raporu görüntüleme</li>
+                                <li><i class="bi bi-x text-danger me-2"></i>Stok değişikliği yapamaz</li>
+                                <li><i class="bi bi-x text-danger me-2"></i>Excel işlemleri yapamaz</li>
+                                <li><i class="bi bi-x text-danger me-2"></i>Kullanıcı yönetimi yapamaz</li>
+                                <li><i class="bi bi-x text-danger me-2"></i>Sistem ayarlarına erişemez</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

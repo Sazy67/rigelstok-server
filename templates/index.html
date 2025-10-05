@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa - Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+
+
+    <!-- İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-xl-6 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-boxes"></i>
+                </div>
+                <h3 class="stat-number">{{ "{:,}".format(stats.total_products or 0).replace(',', '.') }}</h3>
+                <p class="stat-label">Toplam Ürün Çeşidi</p>
+            </div>
+        </div>
+        <div class="col-xl-6 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon info">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <h3 class="stat-number">{{ "{:,.0f}".format(stats.total_weight or 0).replace(',', '.') }}</h3>
+                <p class="stat-label">Toplam Ağırlık (kg)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ana İçerik - 3 Ana Bölüm + Son Hareketler -->
+    <div class="row">
+        <!-- En Çok Stoku Olan Ürünler -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            {% if top_products %}
+            <div class="modern-card h-100">
+                <h5 class="section-title">
+                    <i class="bi bi-trophy"></i>En Çok Stoku
+                </h5>
+                {% for product in top_products[:3] %}
+                <div class="product-card mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong class="text-primary">{{ product.urun_kodu[:8] }}</strong>
+                                    <span class="badge bg-info ms-1">{{ product.konum_sayisi }}</span>
+                                </div>
+                                <div class="text-end">
+                                    <h6 class="text-success mb-0">{{ "{:,}".format(product.toplam_adet).replace(',', '.') }}</h6>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-0 mt-1">{{ product.urun_adi[:25] }}{% if product.urun_adi|length > 25 %}...{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('main.stock_list') }}" class="btn btn-outline-primary btn-sm">
+                        Tümü
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Stoğu Azalanlar -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            {% if low_stock_products %}
+            <div class="modern-card h-100">
+                <h5 class="section-title">
+                    <i class="bi bi-exclamation-triangle text-warning"></i>Stoğu Azalan
+                </h5>
+                {% for product in low_stock_products[:3] %}
+                <div class="product-card mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong class="text-warning">{{ product.urun_kodu[:8] }}</strong>
+                                    {% if product.konum %}
+                                    <span class="badge bg-secondary ms-1">{{ product.konum[:3] }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <h6 class="text-danger mb-0">{{ product.adet }}</h6>
+                                    <small class="text-muted">
+                                        {% if product.stok_yuzde %}
+                                        %{{ product.stok_yuzde }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-0 mt-1">{{ product.urun_adi[:25] }}{% if product.urun_adi|length > 25 %}...{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('main.stock_list') }}?sort_by=adet&sort_order=asc" class="btn btn-outline-warning btn-sm">
+                        Tümü
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Son Hareketler -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="modern-card h-100">
+                <h5 class="section-title">
+                    <i class="bi bi-clock-history"></i>Son Hareketler
+                </h5>
+                {% if recent_movements %}
+                    {% for movement in recent_movements[:4] %}
+                    <div class="movement-item {% if movement.hareket_tipi == 'GIRIS' %}entry{% elif movement.hareket_tipi == 'CIKIS' %}exit{% else %}transfer{% endif %} mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ movement.urun_kodu[:8] }}</strong>
+                                <br><small class="text-muted">
+                                    {% if movement.tarih %}
+                                        {% if movement.tarih is string %}
+                                            {{ movement.tarih[:5] }}
+                                        {% else %}
+                                            {{ movement.tarih.strftime('%d.%m') }}
+                                        {% endif %}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                {% if movement.hareket_tipi == 'GIRIS' %}
+                                    <span class="badge bg-success">+</span>
+                                {% elif movement.hareket_tipi == 'CIKIS' %}
+                                    <span class="badge bg-danger">-</span>
+                                {% else %}
+                                    <span class="badge bg-info">→</span>
+                                {% endif %}
+                                <br><small class="text-muted">{{ movement.miktar }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="text-center mt-2">
+                        <a href="{{ url_for('main.stock_movements') }}" class="btn btn-outline-primary btn-sm">
+                            Tümü
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-clock-history display-6 text-muted"></i>
+                        <p class="text-muted mt-2 small">Henüz hareket yok</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Hızlı İşlemler - En Sağda -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="modern-card h-100">
+                <h5 class="section-title">
+                    <i class="bi bi-lightning"></i>Hızlı İşlemler
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('main.stock_entry') }}" class="modern-btn btn-primary d-flex align-items-center">
+                        <i class="bi bi-plus-square me-2"></i>
+                        <strong>Yeni Stok Girişi</strong>
+                    </a>
+                    <a href="{{ url_for('main.stock_add') }}" class="modern-btn btn-success d-flex align-items-center">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        <strong>Stok Ekleme</strong>
+                    </a>
+                    <a href="{{ url_for('main.stock_exit') }}" class="modern-btn btn-danger d-flex align-items-center">
+                        <i class="bi bi-dash-circle me-2"></i>
+                        <strong>Stok Çıkışı</strong>
+                    </a>
+                    <a href="{{ url_for('main.stock_transfer') }}" class="modern-btn btn-warning d-flex align-items-center">
+                        <i class="bi bi-arrow-left-right me-2"></i>
+                        <strong>Stok Transferi</strong>
+                    </a>
+                    <a href="{{ url_for('main.stock_list') }}" class="modern-btn btn-info d-flex align-items-center">
+                        <i class="bi bi-list-ul me-2"></i>
+                        <strong>Stok Listesi</strong>
+                    </a>
+                    <a href="{{ url_for('main.stock_report') }}" class="modern-btn btn-secondary d-flex align-items-center">
+                        <i class="bi bi-graph-up me-2"></i>
+                        <strong>Raporlar</strong>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sistem Durumu -->
+    <div class="modern-card">
+        <h5 class="section-title">
+            <i class="bi bi-info-circle"></i>Sistem Bilgileri
+        </h5>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-database text-primary me-2"></i>
+                    <span>Veritabanı: <strong>SQLite</strong></span>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-server text-success me-2"></i>
+                    <span>Sunucu: <strong>Flask Development</strong></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-calendar-check text-info me-2"></i>
+                    <span>Son Güncelleme: <strong>Bugün</strong></span>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-shield-check text-warning me-2"></i>
+                    <span>Durum: <strong>Çalışıyor</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

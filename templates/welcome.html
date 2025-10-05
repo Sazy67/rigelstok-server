@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Rigel Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <!-- Rigel Splash Screen -->
+    <div class="min-vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%);">
+        <div class="text-center text-white">
+            <!-- Logo -->
+            <div class="mb-4">
+                <img src="{{ url_for('static', filename='images/rigel-logo.png') }}" alt="Rigel Logo" height="120" class="mb-3">
+                <h1 class="display-4 fw-bold mb-2">RIGEL</h1>
+                <h2 class="h3 mb-4 opacity-75">Stok Takip Sistemi</h2>
+            </div>
+            
+            <!-- Features -->
+            <div class="row mb-5">
+                <div class="col-md-4 mb-3">
+                    <div class="p-3">
+                        <i class="bi bi-geo-alt-fill fs-1 mb-2 text-warning"></i>
+                        <h5>Konum Bazında Takip</h5>
+                        <p class="small opacity-75">Ürünlerinizi hangi konumda kaç adet olduğunu detaylı takip edin</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="p-3">
+                        <i class="bi bi-arrow-left-right fs-1 mb-2 text-success"></i>
+                        <h5>Stok Hareketleri</h5>
+                        <p class="small opacity-75">Giriş, çıkış ve transfer işlemlerini kolayca yönetin</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="p-3">
+                        <i class="bi bi-graph-up fs-1 mb-2 text-info"></i>
+                        <h5>Detaylı Raporlar</h5>
+                        <p class="small opacity-75">Kapsamlı stok raporları ve analiz araçları</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="d-grid gap-2 d-md-block">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-light btn-lg px-5 me-md-3">
+                    <i class="bi bi-house-fill"></i> Dashboard'a Git
+                </a>
+                <a href="{{ url_for('main.stock_entry') }}" class="btn btn-warning btn-lg px-5">
+                    <i class="bi bi-plus-circle-fill"></i> Stok Girişi Yap
+                </a>
+            </div>
+            
+            <!-- Footer -->
+            <div class="mt-5 pt-4 border-top border-light border-opacity-25">
+                <p class="small opacity-50">
+                    © 2025 Rigel Stok Takip Sistemi - Modern Web Tabanlı Stok Yönetimi
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Animasyonlar */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .text-center > * {
+        animation: fadeInUp 0.8s ease-out;
+    }
+    
+    .text-center > div:nth-child(1) { animation-delay: 0.1s; }
+    .text-center > div:nth-child(2) { animation-delay: 0.3s; }
+    .text-center > div:nth-child(3) { animation-delay: 0.5s; }
+    .text-center > div:nth-child(4) { animation-delay: 0.7s; }
+    
+    /* Hover efektleri */
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+    }
+    
+    /* Logo glow efekti */
+    img[alt="Rigel Logo"] {
+        filter: brightness(0) invert(1) drop-shadow(0 0 20px rgba(255,255,255,0.3));
+    }
+</style>
+{% endblock %}

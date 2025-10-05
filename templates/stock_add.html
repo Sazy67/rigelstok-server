@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Mevcut Stoka Ekleme - Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='images/rigel-logo.png') }}" alt="Rigel Logo" height="32" class="me-3">
+            <h1 class="h3 mb-0">Mevcut Stoka Ekleme</h1>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('main.stock_entry') }}" class="btn btn-outline-primary">
+                <i class="bi bi-plus-square"></i> Yeni Ürün Ekle
+            </a>
+            <a href="{{ url_for('main.stock_list') }}" class="btn btn-secondary">
+                <i class="bi bi-list-ul"></i> Stok Listesi
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-plus-circle"></i> Mevcut Ürüne Stok Ekleme
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="stockAddForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="urun_kodu" class="form-label">Ürün Kodu *</label>
+                                <select class="form-select" id="urun_kodu" name="urun_kodu" required>
+                                    <option value="">Ürün seçin...</option>
+                                    {% for product in products %}
+                                    <option value="{{ product.urun_kodu }}" 
+                                            data-urun-adi="{{ product.urun_adi }}"
+                                            {% if request.args.get('urun_kodu') == product.urun_kodu %}selected{% endif %}>
+                                        {{ product.urun_kodu }} - {{ product.urun_adi }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="urun_adi" class="form-label">Ürün Adı</label>
+                                <input type="text" class="form-control" id="urun_adi" name="urun_adi" readonly style="background-color: #f8f9fa;">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="renk" class="form-label">Renk</label>
+                                <select class="form-select" id="renk" name="renk">
+                                    <option value="">Renk seçin...</option>
+                                    {% for color in colors %}
+                                    <option value="{{ color.renk }}"
+                                            {% if request.args.get('renk') == color.renk %}selected{% endif %}>
+                                        {{ color.renk }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="konum" class="form-label">Konum *</label>
+                                <select class="form-select" id="konum" name="konum" required>
+                                    <option value="">Konum seçin...</option>
+                                    {% for location in locations %}
+                                    <option value="{{ location.konum }}"
+                                            {% if request.args.get('konum') == location.konum %}selected{% endif %}>
+                                        {{ location.konum }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="adet" class="form-label">Eklenecek Adet *</label>
+                                <input type="number" class="form-control" id="adet" name="adet" 
+                                       min="1" step="1" required value="1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="mevcut_stok" class="form-label">Mevcut Stok</label>
+                                <input type="text" class="form-control" id="mevcut_stok" 
+                                       readonly style="background-color: #f8f9fa;" placeholder="Ürün ve konum seçin...">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="islem_tarihi" class="form-label">İşlem Tarihi *</label>
+                                <input type="date" class="form-control" id="islem_tarihi" name="islem_tarihi" 
+                                       required value="{{ today }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="aciklama" class="form-label">Açıklama</label>
+                            <textarea class="form-control" id="aciklama" name="aciklama" rows="3" 
+                                      placeholder="Stok girişi hakkında açıklama..."></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Temizle
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Stok Ekle
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Stok Bilgileri
+                    </h5>
+                </div>
+                <div class="card-body" id="stockInfo">
+                    <div class="alert alert-info">
+                        <h6>Nasıl Kullanılır:</h6>
+                        <ul class="mb-0">
+                            <li>Önce ürün kodunu seçin</li>
+                            <li>Renk ve konum seçin</li>
+                            <li>Eklenecek adet miktarını girin</li>
+                            <li>Mevcut stok otomatik gösterilir</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6>Önemli:</h6>
+                        <ul class="mb-0">
+                            <li>Bu sayfa <strong>sadece mevcut ürünlere</strong> stok ekler</li>
+                            <li>Yeni ürün eklemek için <strong>"Yeni Ürün Ekle"</strong> butonunu kullanın</li>
+                            <li>Aynı ürün+renk+konum varsa mevcut stoka eklenir</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4" id="stockPreview" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-eye"></i> Stok Önizleme
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-light">
+                                <small class="text-muted">Mevcut Stok</small>
+                                <div class="h5 mb-0 text-primary" id="current_stock">0</div>
+                                <small>adet</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-success text-white">
+                                <small>Yeni Toplam</small>
+                                <div class="h5 mb-0" id="new_total">0</div>
+                                <small>adet</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Ürün seçimi değiştiğinde
+document.getElementById('urun_kodu').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const urunAdi = selectedOption.getAttribute('data-urun-adi') || '';
+    
+    document.getElementById('urun_adi').value = urunAdi;
+    
+    // Mevcut stok bilgisini temizle
+    document.getElementById('mevcut_stok').value = '';
+    document.getElementById('stockPreview').style.display = 'none';
+    
+    // Stok bilgisini güncelle
+    updateStockInfo();
+});
+
+// Renk veya konum değiştiğinde
+document.getElementById('renk').addEventListener('change', updateStockInfo);
+document.getElementById('konum').addEventListener('change', updateStockInfo);
+document.getElementById('adet').addEventListener('input', updatePreview);
+
+function updateStockInfo() {
+    const urunKodu = document.getElementById('urun_kodu').value;
+    const renk = document.getElementById('renk').value;
+    const konum = document.getElementById('konum').value;
+    
+    if (!urunKodu || !konum) {
+        document.getElementById('mevcut_stok').value = '';
+        document.getElementById('stockPreview').style.display = 'none';
+        return;
+    }
+    
+    // AJAX ile mevcut stok bilgisini getir
+    const params = new URLSearchParams({
+        urun_kodu: urunKodu,
+        renk: renk || '',
+        konum: konum
+    });
+    
+    fetch(`/api/check-stock?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const mevcutStok = data.stock ? data.stock.adet : 0;
+                document.getElementById('mevcut_stok').value = `${mevcutStok} adet`;
+                document.getElementById('current_stock').textContent = mevcutStok;
+                document.getElementById('stockPreview').style.display = 'block';
+                updatePreview();
+            } else {
+                document.getElementById('mevcut_stok').value = '0 adet (Yeni kombinasyon)';
+                document.getElementById('current_stock').textContent = '0';
+                document.getElementById('stockPreview').style.display = 'block';
+                updatePreview();
+            }
+        })
+        .catch(error => {
+            console.error('Stok kontrol hatası:', error);
+            document.getElementById('mevcut_stok').value = 'Hata!';
+            document.getElementById('stockPreview').style.display = 'none';
+        });
+}
+
+function updatePreview() {
+    const mevcutStok = parseInt(document.getElementById('current_stock').textContent) || 0;
+    const eklenecekAdet = parseInt(document.getElementById('adet').value) || 0;
+    const yeniToplam = mevcutStok + eklenecekAdet;
+    
+    document.getElementById('new_total').textContent = yeniToplam;
+}
+
+// Form reset edildiğinde
+document.getElementById('stockAddForm').addEventListener('reset', function() {
+    setTimeout(function() {
+        document.getElementById('urun_adi').value = '';
+        document.getElementById('mevcut_stok').value = '';
+        document.getElementById('stockPreview').style.display = 'none';
+    }, 10);
+});
+
+// URL parametrelerini kontrol et
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('urun_kodu')) {
+        // Ürün kodu seçiliyse ürün adını güncelle
+        const urunKoduSelect = document.getElementById('urun_kodu');
+        const selectedOption = urunKoduSelect.options[urunKoduSelect.selectedIndex];
+        if (selectedOption) {
+            const urunAdi = selectedOption.getAttribute('data-urun-adi') || '';
+            document.getElementById('urun_adi').value = urunAdi;
+        }
+        updateStockInfo();
+    }
+});
+</script>
+{% endblock %}

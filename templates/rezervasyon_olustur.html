@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Yeni Rezervasyon - Stok Takip Sistemi{% endblock %}
+
+{% block content %}
+<div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='images/rigel-logo.png') }}" alt="Rigel Logo" height="32" class="me-3">
+            <h1 class="h3 mb-0">Yeni Rezervasyon Oluştur</h1>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('main.rezervasyonlar') }}" class="btn btn-outline-primary">
+                <i class="bi bi-list-ul"></i> Rezervasyon Listesi
+            </a>
+            <a href="{{ url_for('main.stock_list') }}" class="btn btn-secondary">
+                <i class="bi bi-box"></i> Stok Listesi
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bookmark-plus"></i> Rezervasyon Bilgileri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="rezervasyonForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="urun_kodu" class="form-label">Ürün Kodu *</label>
+                                <select class="form-select" id="urun_kodu" name="urun_kodu" required>
+                                    <option value="">Ürün seçin...</option>
+                                    {% for product in products %}
+                                    <option value="{{ product.urun_kodu }}" 
+                                            data-urun-adi="{{ product.urun_adi }}"
+                                            {% if request.args.get('urun_kodu') == product.urun_kodu %}selected{% endif %}>
+                                        {{ product.urun_kodu }} - {{ product.urun_adi }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="urun_adi" class="form-label">Ürün Adı</label>
+                                <input type="text" class="form-control" id="urun_adi" name="urun_adi" readonly style="background-color: #f8f9fa;">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="renk" class="form-label">Renk</label>
+                                <select class="form-select" id="renk" name="renk">
+                                    <option value="">Renk seçin...</option>
+                                    {% for color in colors %}
+                                    <option value="{{ color.renk }}"
+                                            {% if request.args.get('renk') == color.renk %}selected{% endif %}>
+                                        {{ color.renk }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="konum" class="form-label">Konum *</label>
+                                <select class="form-select" id="konum" name="konum" required>
+                                    <option value="">Konum seçin...</option>
+                                    {% for location in locations %}
+                                    <option value="{{ location.konum }}"
+                                            {% if request.args.get('konum') == location.konum %}selected{% endif %}>
+                                        {{ location.konum }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="adet" class="form-label">Rezerve Edilecek Adet *</label>
+                                <input type="number" class="form-control" id="adet" name="adet" 
+                                       min="1" step="1" required value="1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="mevcut_stok" class="form-label">Mevcut Stok</label>
+                                <input type="text" class="form-control" id="mevcut_stok" 
+                                       readonly style="background-color: #f8f9fa;" placeholder="Ürün ve konum seçin...">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="musait_stok" class="form-label">Müsait Stok</label>
+                                <input type="text" class="form-control" id="musait_stok" 
+                                       readonly style="background-color: #f8f9fa;" placeholder="Hesaplanıyor...">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="rezerve_eden" class="form-label">Rezerve Eden Kişi *</label>
+                                <input type="text" class="form-control" id="rezerve_eden" name="rezerve_eden" 
+                                       required placeholder="Pazarlamacı adı, soyadı...">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="rezerve_edilecek" class="form-label">Rezerve Sonrası Müsait</label>
+                                <input type="text" class="form-control" id="rezerve_edilecek" 
+                                       readonly style="background-color: #e3f2fd;" placeholder="Hesaplanıyor...">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="aciklama" class="form-label">Açıklama</label>
+                            <textarea class="form-control" id="aciklama" name="aciklama" rows="3" 
+                                      placeholder="Rezervasyon sebebi, müşteri bilgisi vb..."></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Temizle
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-bookmark-plus"></i> Rezervasyonu Oluştur
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Rezervasyon Hakkında
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6>Rezervasyon Nedir?</h6>
+                        <ul class="mb-0">
+                            <li>Ürünler <strong>fiziksel olarak stoktan çıkmaz</strong></li>
+                            <li>Sadece <strong>rezerve edilmiş</strong> olarak işaretlenir</li>
+                            <li>Diğer kullanıcılar <strong>müsait stok</strong> miktarını görür</li>
+                            <li>Rezervasyon <strong>tamamlandığında</strong> stoktan çıkar</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6>Önemli Notlar:</h6>
+                        <ul class="mb-0">
+                            <li>Rezerve edilecek adet müsait stoktan fazla olamaz</li>
+                            <li>Tüm rezervasyonlar <strong>raporlamalarda görünür</strong></li>
+                            <li>Rezervasyonlar iptal edilebilir veya tamamlanabilir</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4" id="stokPreview" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-eye"></i> Stok Durumu
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-light">
+                                <small class="text-muted">Mevcut Stok</small>
+                                <div class="h5 mb-0 text-primary" id="preview_mevcut">0</div>
+                                <small>adet</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-warning text-dark">
+                                <small>Rezerveli</small>
+                                <div class="h5 mb-0" id="preview_rezerveli">0</div>
+                                <small>adet</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-success text-white">
+                                <small>Müsait Stok</small>
+                                <div class="h5 mb-0" id="preview_musait">0</div>
+                                <small>adet</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-info text-white">
+                                <small>Rezerve Sonrası</small>
+                                <div class="h5 mb-0" id="preview_sonrasi">0</div>
+                                <small>adet</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Ürün seçimi değiştiğinde
+document.getElementById('urun_kodu').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const urunAdi = selectedOption.getAttribute('data-urun-adi') || '';
+    
+    document.getElementById('urun_adi').value = urunAdi;
+    
+    // Stok bilgisini temizle
+    clearStokInfo();
+    
+    // Stok bilgisini güncelle
+    updateStokInfo();
+});
+
+// Renk veya konum değiştiğinde
+document.getElementById('renk').addEventListener('change', updateStokInfo);
+document.getElementById('konum').addEventListener('change', updateStokInfo);
+document.getElementById('adet').addEventListener('input', updatePreview);
+
+function clearStokInfo() {
+    document.getElementById('mevcut_stok').value = '';
+    document.getElementById('musait_stok').value = '';
+    document.getElementById('rezerve_edilecek').value = '';
+    document.getElementById('stokPreview').style.display = 'none';
+}
+
+function updateStokInfo() {
+    const urunKodu = document.getElementById('urun_kodu').value;
+    const renk = document.getElementById('renk').value;
+    const konum = document.getElementById('konum').value;
+    
+    if (!urunKodu || !konum) {
+        clearStokInfo();
+        return;
+    }
+    
+    // AJAX ile stok durumu bilgisini getir
+    const params = new URLSearchParams({
+        urun_kodu: urunKodu,
+        renk: renk || '',
+        konum: konum
+    });
+    
+    fetch(`/api/rezervasyon-stok-kontrol?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const mevcutStok = data.mevcut_stok || 0;
+                const rezerveliAdet = data.rezerveli_adet || 0;
+                const musaitAdet = data.musait_adet || 0;
+                
+                document.getElementById('mevcut_stok').value = `${mevcutStok} adet`;
+                document.getElementById('musait_stok').value = `${musaitAdet} adet`;
+                
+                // Preview kartını güncelle
+                document.getElementById('preview_mevcut').textContent = mevcutStok;
+                document.getElementById('preview_rezerveli').textContent = rezerveliAdet;
+                document.getElementById('preview_musait').textContent = musaitAdet;
+                
+                document.getElementById('stokPreview').style.display = 'block';
+                updatePreview();
+            } else {
+                document.getElementById('mevcut_stok').value = 'Bu konumda stok yok';
+                document.getElementById('musait_stok').value = '0 adet';
+                document.getElementById('stokPreview').style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Stok kontrol hatası:', error);
+            document.getElementById('mevcut_stok').value = 'Hata!';
+            document.getElementById('musait_stok').value = 'Hata!';
+            document.getElementById('stokPreview').style.display = 'none';
+        });
+}
+
+function updatePreview() {
+    const musaitAdet = parseInt(document.getElementById('preview_musait').textContent) || 0;
+    const rezerveEdilecek = parseInt(document.getElementById('adet').value) || 0;
+    const sonrasiMusait = Math.max(0, musaitAdet - rezerveEdilecek);
+    
+    document.getElementById('preview_sonrasi').textContent = sonrasiMusait;
+    document.getElementById('rezerve_edilecek').value = `${sonrasiMusait} adet`;
+    
+    // Uyarı renkleri
+    const sonrasiElement = document.getElementById('preview_sonrasi').parentElement;
+    if (sonrasiMusait < 0) {
+        sonrasiElement.className = 'border rounded p-2 bg-danger text-white';
+    } else if (sonrasiMusait === 0) {
+        sonrasiElement.className = 'border rounded p-2 bg-warning text-dark';
+    } else {
+        sonrasiElement.className = 'border rounded p-2 bg-info text-white';
+    }
+}
+
+// Form reset edildiğinde
+document.getElementById('rezervasyonForm').addEventListener('reset', function() {
+    setTimeout(function() {
+        clearStokInfo();
+        document.getElementById('urun_adi').value = '';
+    }, 10);
+});
+
+// Form validasyonu
+document.getElementById('rezervasyonForm').addEventListener('submit', function(e) {
+    const musaitAdet = parseInt(document.getElementById('preview_musait').textContent) || 0;
+    const rezerveEdilecek = parseInt(document.getElementById('adet').value) || 0;
+    
+    if (rezerveEdilecek > musaitAdet) {
+        e.preventDefault();
+        alert(`Rezerve edilecek adet (${rezerveEdilecek}) müsait stoktan (${musaitAdet}) fazla olamaz!`);
+        return;
+    }
+    
+    if (rezerveEdilecek <= 0) {
+        e.preventDefault();
+        alert('Rezerve edilecek adet 0\'dan büyük olmalıdır!');
+        return;
+    }
+    
+    const rezerveEden = document.getElementById('rezerve_eden').value.trim();
+    if (!rezerveEden) {
+        e.preventDefault();
+        alert('Rezerve eden kişi bilgisi zorunludur!');
+        return;
+    }
+});
+
+// URL parametrelerini kontrol et
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('urun_kodu')) {
+        // Ürün kodu seçiliyse ürün adını güncelle
+        const urunKoduSelect = document.getElementById('urun_kodu');
+        const selectedOption = urunKoduSelect.options[urunKoduSelect.selectedIndex];
+        if (selectedOption) {
+            const urunAdi = selectedOption.getAttribute('data-urun-adi') || '';
+            document.getElementById('urun_adi').value = urunAdi;
+        }
+        updateStokInfo();
+    }
+});
+</script>
+{% endblock %}

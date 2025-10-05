@@ -1,0 +1,978 @@
+{% extends "base.html" %}
+
+{% block title %}Detaylı Stok Raporu - Stok Takip Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Responsive Modal Improvements */
+@media (max-width: 768px) {
+    #stockDetailModal > div {
+        margin: 10px !important;
+        width: calc(100% - 20px) !important;
+        max-width: none !important;
+        min-height: calc(100vh - 20px) !important;
+    }
+}
+
+@media (min-width: 769px) {
+    #stockDetailModal > div {
+        max-width: 1400px !important;
+    }
+}
+
+/* Sticky table header */
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Card improvements */
+.card-stats {
+    transition: transform 0.2s;
+}
+
+.card-stats:hover {
+    transform: translateY(-2px);
+}
+
+.sortable-header {
+    transition: all 0.2s ease;
+}
+
+.sortable-header:hover {
+    background-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Enhanced Statistics Cards - Even smaller size for stock report */
+.stat-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 1rem 0.75rem;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-color);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+    font-size: 18px;
+    position: relative;
+}
+
+.stat-icon.primary { 
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.1));
+    color: var(--primary-color);
+}
+.stat-icon.info { 
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.1), rgba(34, 197, 94, 0.1));
+    color: var(--info-color);
+
+}
+
+.stat-number {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0.25rem 0;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Responsive design for statistics cards */
+@media (max-width: 768px) {
+    .stat-card {
+        padding: 0.875rem 0.625rem;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+    
+    .stat-label {
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .stat-card {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .stat-number {
+        font-size: 1.25rem;
+    }
+    
+    .stat-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        margin: 0 auto 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.6rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="col-12" data-user-is-admin="{% if user_is_admin %}true{% else %}false{% endif %}">
+    <!-- Kullanıcı durumu mesajı -->
+    {% if current_user and not user_is_admin %}
+    <div class="alert alert-info mb-4" role="alert">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h6 class="alert-heading mb-2">
+                    <i class="bi bi-info-circle me-2"></i>Kullanıcı Modu - Salt Okunur Erişim
+                </h6>
+                <p class="mb-0">
+                    <strong>{{ current_user.username }}</strong> olarak giriş yaptınız. Bu sayfada sadece stok bilgilerini görüntüleyebilirsiniz.
+                    Stok değişiklikleri yapmak için admin yetkiniz olmalıdır.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <span class="badge bg-info fs-6">
+                    <i class="bi bi-eye me-1"></i>Salt Okunur
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="mb-4">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-graph-up"></i> Detaylı Stok Raporu
+        </h1>
+    </div>
+
+    <!-- İstatistikler - Sadece admin kullanıcılar için göster -->
+    {% if user_is_admin %}
+    <div class="row mb-4">
+        <div class="col-xl-6 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-boxes"></i>
+                </div>
+                <h3 class="stat-number">{{ "{:,}".format(stats.total_products or 0).replace(',', '.') }}</h3>
+                <p class="stat-label">Toplam Ürün Çeşidi</p>
+            </div>
+        </div>
+        <div class="col-xl-6 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon info">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <h3 class="stat-number">{{ "{:,.0f}".format(stats.total_weight or 0).replace(',', '.') }}</h3>
+                <p class="stat-label">Toplam Ağırlık (kg)</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-funnel"></i> Filtreler
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Ürün Arama</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Ürün kodu veya adı..." value="{{ search }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="color" class="form-label">Renk</label>
+                    <select class="form-select" id="color" name="color">
+                        <option value="">Tüm Renkler</option>
+                        {% for color in colors %}
+                            <option value="{{ color.renk }}" {% if color_filter == color.renk %}selected{% endif %}>
+                                {{ color.renk }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="sistem_seri" class="form-label">Sistem Seri</label>
+                    <select class="form-select" id="sistem_seri" name="sistem_seri">
+                        <option value="">Tüm Sistem Serileri</option>
+                        {% for s in sistem_seriler %}
+                            <option value="{{ s.sistem_seri }}" {% if sistem_seri_filter == s.sistem_seri %}selected{% endif %}>
+                                {{ s.sistem_seri }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Filtrele
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            {% if search or sistem_seri_filter or color_filter %}
+            <div class="mt-3">
+                <a href="{{ url_for('main.stock_report') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-circle"></i> Filtreleri Temizle
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stok Raporu -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-table"></i> Ürün Bazında Stok Dağılımı
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if products %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="stockReportTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>
+                                    <a href="{{ url_for('main.stock_report', sort_by='urun_kodu', sort_order='desc' if sort_by == 'urun_kodu' and sort_order == 'asc' else 'asc', search=search, sistem_seri=sistem_seri_filter, color=color_filter) }}" 
+                                       class="text-decoration-none text-white fw-bold sortable-header">
+                                        Ürün Kodu
+                                        {% if sort_by == 'urun_kodu' %}
+                                            {% if sort_order == 'asc' %}
+                                                <i class="bi bi-arrow-up text-warning"></i>
+                                            {% else %}
+                                                <i class="bi bi-arrow-down text-warning"></i>
+                                            {% endif %}
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted small"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('main.stock_report', sort_by='urun_adi', sort_order='desc' if sort_by == 'urun_adi' and sort_order == 'asc' else 'asc', search=search, sistem_seri=sistem_seri_filter, color=color_filter) }}" 
+                                       class="text-decoration-none text-white fw-bold sortable-header">
+                                        Ürün Adı
+                                        {% if sort_by == 'urun_adi' %}
+                                            {% if sort_order == 'asc' %}
+                                                <i class="bi bi-arrow-up text-warning"></i>
+                                            {% else %}
+                                                <i class="bi bi-arrow-down text-warning"></i>
+                                            {% endif %}
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted small"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('main.stock_report', sort_by='renk', sort_order='desc' if sort_by == 'renk' and sort_order == 'asc' else 'asc', search=search, sistem_seri=sistem_seri_filter, color=color_filter) }}" 
+                                       class="text-decoration-none text-white fw-bold sortable-header">
+                                        Renk
+                                        {% if sort_by == 'renk' %}
+                                            {% if sort_order == 'asc' %}
+                                                <i class="bi bi-arrow-up text-warning"></i>
+                                            {% else %}
+                                                <i class="bi bi-arrow-down text-warning"></i>
+                                            {% endif %}
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted small"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('main.stock_report', sort_by='sistem_seri', sort_order='desc' if sort_by == 'sistem_seri' and sort_order == 'asc' else 'asc', search=search, sistem_seri=sistem_seri_filter, color=color_filter) }}" 
+                                       class="text-decoration-none text-white fw-bold sortable-header">
+                                        Sistem Seri
+                                        {% if sort_by == 'sistem_seri' %}
+                                            {% if sort_order == 'asc' %}
+                                                <i class="bi bi-arrow-up text-warning"></i>
+                                            {% else %}
+                                                <i class="bi bi-arrow-down text-warning"></i>
+                                            {% endif %}
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted small"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('main.stock_report', sort_by='toplam_adet', sort_order='desc' if sort_by == 'toplam_adet' and sort_order == 'asc' else 'asc', search=search, sistem_seri=sistem_seri_filter, color=color_filter) }}" 
+                                       class="text-decoration-none text-white fw-bold sortable-header">
+                                        Toplam Adet
+                                        {% if sort_by == 'toplam_adet' %}
+                                            {% if sort_order == 'asc' %}
+                                                <i class="bi bi-arrow-up text-warning"></i>
+                                            {% else %}
+                                                <i class="bi bi-arrow-down text-warning"></i>
+                                            {% endif %}
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted small"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                {% if user_is_admin %}
+                                <th>
+                                    <a href="{{ url_for('main.stock_report', sort_by='toplam_agirlik', sort_order='desc' if sort_by == 'toplam_agirlik' and sort_order == 'asc' else 'asc', search=search, sistem_seri=sistem_seri_filter, color=color_filter) }}" 
+                                       class="text-decoration-none text-white fw-bold sortable-header">
+                                        Toplam Ağırlık
+                                        {% if sort_by == 'toplam_agirlik' %}
+                                            {% if sort_order == 'asc' %}
+                                                <i class="bi bi-arrow-up text-warning"></i>
+                                            {% else %}
+                                                <i class="bi bi-arrow-down text-warning"></i>
+                                            {% endif %}
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted small"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                {% endif %}
+                                <th>Uzunluk</th>
+                                <th>MT/KG</th>
+                                <th>Konum Dağılımı</th>
+                                <th>Rezerve Durumu</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">{{ product.urun_kodu }}</strong>
+                                </td>
+                                <td>{{ product.urun_adi }}</td>
+                                <td>
+                                    {% if product.renk %}
+                                        <span class="badge bg-secondary">{{ product.renk }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ product.sistem_seri or '-' }}</td>
+                                <td>
+                                    {% set is_critical = product.is_critical %}
+                                    <span class="fs-5 fw-bold px-3 py-2 rounded {% if is_critical %}text-white bg-danger{% else %}text-white bg-success{% endif %}">
+                                        {{ "{:,}".format(product.toplam_adet).replace(',', '.') }}
+                                    </span>
+                                    <br><small class="text-muted mt-1">adet</small>
+                                </td>
+                                {% if user_is_admin %}
+                                <td>
+                                    <span class="fw-bold">{{ "{:,.2f}".format(product.toplam_agirlik) }} kg</span>
+                                </td>
+                                {% endif %}
+                                <td style="background-color: white; color: black; font-family: Arial, sans-serif;">
+                                    {% if product.uzunluk %}
+                                        {{ product.uzunluk }} mm
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td style="background-color: white; color: black; font-family: Arial, sans-serif;">
+                                    {% if product.mt_kg %}
+                                        {{ product.mt_kg }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for konum in product.konumlar %}
+                                            {% set konum_critical = konum.is_critical %}
+                                            <span class="badge fs-6 px-2 py-1 {% if konum_critical %}bg-danger{% else %}bg-success{% endif %}" 
+                                                  title="{{ konum.konum }}: {{ konum.adet }} adet ({{ '{:,.2f}'.format(konum.toplam_kg) }} kg){% if konum_critical %} - KRİTİK STOK{% endif %}">
+                                                {{ konum.konum }}: {{ konum.adet }}
+                                                {% if konum_critical %}
+                                                    <i class="bi bi-exclamation-triangle ms-1"></i>
+                                                {% endif %}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                    <small class="text-muted">{{ product.konumlar|length }} farklı konumda</small>
+                                    {% if product.is_critical %}
+                                        <br><small class="text-danger fw-bold">
+                                            <i class="bi bi-exclamation-triangle"></i> Kritik Stok Seviyesi!
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if product.has_reservations %}
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="badge bg-warning text-dark me-2">
+                                                <i class="bi bi-calendar-check"></i> Rezerve
+                                            </span>
+                                            <small class="text-muted">{{ product.reservation_count }} konum</small>
+                                        </div>
+                                        {% for reservation in product.reservations %}
+                                            <div class="mb-1">
+                                                <small class="text-warning">
+                                                    <strong>{{ reservation.konum }}:</strong> {{ reservation.rezervasyon_notu[:25] }}{% if reservation.rezervasyon_notu|length > 25 %}...{% endif %}
+                                                </small>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-outline-primary stock-detail-btn" 
+                                            data-urun-kodu="{{ product.urun_kodu }}" 
+                                            data-renk="{{ product.renk or '' }}"
+                                            title="Detay Görüntüle">
+                                        <i class="bi bi-eye"></i> Detay Görüntüle
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+                
+                <div class="mt-3">
+                    <p class="text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Toplam {{ products|length }} ürün gösteriliyor. 
+                        {% if search or sistem_seri_filter or color_filter %}
+                            Filtre uygulanmış görünüm.
+                        {% endif %}
+                    </p>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                    <h4 class="text-muted">Stok Bulunamadı</h4>
+                    <p class="text-muted">
+                        {% if search or sistem_seri_filter or color_filter %}
+                            Arama kriterlerinize uygun stok bulunamadı. Filtreleri değiştirip tekrar deneyin.
+                        {% else %}
+                            Henüz sistemde stok bulunmuyor.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Basit Product Detail Modal -->
+<div id="productDetailModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border-radius:8px; width:85%; max-width:800px; max-height:80%; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #ddd; padding-bottom:10px;">
+            <h5>Ürün Detayı</h5>
+            <button onclick="closeProductModal()" style="background:none; border:none; font-size:24px; cursor:pointer;">×</button>
+        </div>
+        <div id="productDetailBody">
+            <p>Yükleniyor...</p>
+        </div>
+        <div style="margin-top:15px; text-align:right; border-top:1px solid #ddd; padding-top:10px;">
+            <button onclick="closeProductModal()" style="background:#6c757d; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Kapat</button>
+        </div>
+    </div>
+</div>
+
+<!-- Responsive Stock Detail Modal -->
+<div id="stockDetailModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; overflow-y:auto;">
+    <div style="position:relative; margin:20px auto; background:white; border-radius:8px; width:95%; max-width:1200px; min-height:calc(100vh - 40px); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="position:sticky; top:0; background:white; display:flex; justify-content:space-between; align-items:center; padding:15px 20px; border-bottom:1px solid #ddd; border-radius:8px 8px 0 0; z-index:10;">
+            <h5 style="margin:0; color:#0d6efd;">Stok Detayı</h5>
+            <button onclick="closeStockModal()" style="background:none; border:none; font-size:28px; cursor:pointer; color:#6c757d; line-height:1;">&times;</button>
+        </div>
+        <div id="stockDetailContent" style="padding:20px; min-height:200px;">
+            <p>Yükleniyor...</p>
+        </div>
+        <div style="position:sticky; bottom:0; background:white; margin-top:15px; padding:15px 20px; text-align:right; border-top:1px solid #ddd; border-radius:0 0 8px 8px;">
+            <button onclick="closeStockModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-size:14px;">Kapat</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Event delegation for stock detail buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('stock-detail-btn') || e.target.closest('.stock-detail-btn')) {
+            const button = e.target.classList.contains('stock-detail-btn') ? e.target : e.target.closest('.stock-detail-btn');
+            const urunKodu = button.getAttribute('data-urun-kodu');
+            const renk = button.getAttribute('data-renk');
+            // For stock detail, we need a location - let's show all locations for this product
+            showStockDetail(urunKodu, renk, '');
+        }
+    });
+});
+
+// Ürün detayını modal'da göster (Rapor Detayı)
+function showProductDetail(urunKodu, renk) {
+    const modal = document.getElementById('productDetailModal');
+    const modalBody = document.getElementById('productDetailBody');
+    
+    modalBody.innerHTML = '<div style="text-align:center;"><div style="border:3px solid #f3f3f3; border-top:3px solid #0d6efd; border-radius:50%; width:30px; height:30px; animation:spin 1s linear infinite; margin:0 auto;"></div><p style="margin-top:10px;">Yükleniyor...</p></div><style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>';
+    
+    // Modal'ı göster
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    
+    // AJAX ile ürün detayını getir
+    fetch(`/api/product-detail?urun_kodu=${encodeURIComponent(urunKodu)}&renk=${encodeURIComponent(renk)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('API Response:', data); // Debug için
+            if (data.success) {
+                let html = `
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Ürün Kodu:</strong> ${data.product.urun_kodu}<br>
+                            <strong>Ürün Adı:</strong> ${data.product.urun_adi}<br>
+                            <strong>Sistem Seri:</strong> ${data.product.sistem_seri || '-'}<br>
+                            <strong>Renk:</strong> ${data.product.renk || '-'}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Toplam Stok:</strong> <span class="text-success">${data.product.toplam_adet} adet</span><br>
+                            <strong>Toplam Ağırlık:</strong> ${data.product.toplam_agirlik} kg<br>
+                            <strong>Konum Sayısı:</strong> ${data.product.konumlar.length}
+                        </div>
+                    </div>
+                    
+                    <h6>Konum Bazında Dağılım:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Konum</th>
+                                    <th>Adet</th>
+                                    <th>Ağırlık (kg)</th>
+                                    <th>Yüzde</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                if (data.product.konumlar && data.product.konumlar.length > 0) {
+                    data.product.konumlar.forEach(konum => {
+                        const percentage = ((konum.adet / data.product.toplam_adet) * 100).toFixed(1);
+                        html += `
+                            <tr>
+                                <td><span class="badge bg-primary">${konum.konum}</span></td>
+                                <td>${konum.adet}</td>
+                                <td>${konum.toplam_kg}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" role="progressbar" style="width: ${percentage}%">
+                                            ${percentage}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    html += '<tr><td colspan="4" class="text-center text-muted">Konum bilgisi bulunamadı</td></tr>';
+                }
+                
+                html += '</tbody></table></div>';
+                modalBody.innerHTML = html;
+            } else {
+                modalBody.innerHTML = `<div class="alert alert-danger">Ürün detayı yüklenemedi: ${data.message || 'Bilinmeyen hata'}</div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Ürün detay yükleme hatası:', error);
+            modalBody.innerHTML = `<div class="alert alert-danger">Bir hata oluştu: ${error.message}</div>`;
+        });
+}
+
+// Stok detayını göster (Stock List benzeri)
+function showStockDetail(urunKodu, renk, konum) {
+    const modal = document.getElementById('stockDetailModal');
+    const content = document.getElementById('stockDetailContent');
+    
+    // Loading göster
+    content.innerHTML = '<div style="text-align:center;"><div style="border:3px solid #f3f3f3; border-top:3px solid #0d6efd; border-radius:50%; width:30px; height:30px; animation:spin 1s linear infinite; margin:0 auto;"></div><p style="margin-top:10px;">Stok detayları yükleniyor...</p></div><style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>';
+    
+    // Modal'ı göster
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    
+    // AJAX ile detay bilgilerini getir
+    fetch(`/api/product-detail?urun_kodu=${encodeURIComponent(urunKodu)}&renk=${encodeURIComponent(renk)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Kullanıcı admin mi kontrolü - using a data attribute set in HTML
+                const isAdmin = document.body.dataset.userIsAdmin === 'true';
+                content.innerHTML = createStockDetailHTML(data.product, isAdmin);
+            } else {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Hata: ${data.message}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Detay bilgileri yüklenirken hata oluştu: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// Stok detay HTML'ini oluştur
+function createStockDetailHTML(product, isAdmin = true) {
+    let html = `
+        <div class="row mb-3">
+            <div class="col-lg-6 col-md-12 mb-3">
+                <h6 class="text-primary"><i class="bi bi-box-seam"></i> Ürün Bilgileri</h6>
+                <div class="card border-primary">
+                    <div class="card-body p-3">
+                        <p class="mb-2"><strong>Ürün Kodu:</strong> <span class="badge bg-primary">${product.urun_kodu}</span></p>
+                        <p class="mb-2"><strong>Ürün Adı:</strong> ${product.urun_adi}</p>
+                        <p class="mb-2"><strong>Sistem Seri:</strong> ${product.sistem_seri || '-'}</p>
+                        <p class="mb-0"><strong>Renk:</strong> ${product.renk ? `<span class="badge bg-secondary">${product.renk}</span>` : '-'}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12 mb-3">
+                <h6 class="text-success"><i class="bi bi-graph-up"></i> Toplam Stok</h6>
+                <div class="card border-success">
+                    <div class="card-body p-3">
+                        <p class="mb-2"><strong>Toplam Adet:</strong> 
+                            <span class="fs-5 fw-bold px-3 py-2 rounded text-white ${product.toplam_adet <= 5 ? 'bg-danger' : 'bg-success'}">
+                                ${product.toplam_adet}
+                            </span>
+                        </p>
+                        ${isAdmin ? `<p class="mb-2"><strong>Toplam Ağırlık:</strong> <span class="badge bg-info">${product.toplam_agirlik} kg</span></p>` : ''}
+                        <p class="mb-0"><strong>Konum Sayısı:</strong> <span class="badge bg-warning text-dark">${product.konumlar.length}</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Uzunluk ve MT/KG Bilgileri -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-info">
+                    <div class="card-body p-3">
+                        <h6 class="text-info mb-2"><i class="bi bi-rulers"></i> Ürün Özellikleri</h6>
+                        <div class="d-flex flex-wrap gap-3">
+                            ${product.uzunluk ? `
+                            <div>
+                                <small class="text-muted">Uzunluk</small><br>
+                                <span class="fw-bold">${product.uzunluk} mm</span>
+                            </div>` : ''}
+                            ${product.mt_kg ? `
+                            <div>
+                                <small class="text-muted">MT/KG</small><br>
+                                <span class="fw-bold">${product.mt_kg}</span>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Rezervasyon bilgilerini göster
+    if (product.rezervasyon_bilgileri && product.rezervasyon_bilgileri.length > 0) {
+        html += `
+            <div class="alert alert-warning">
+                <h6 class="alert-heading">
+                    <i class="bi bi-exclamation-triangle"></i> Rezervasyon Bilgileri
+                </h6>
+        `;
+        product.rezervasyon_bilgileri.forEach(rezervasyon => {
+            html += `
+                <div class="mb-2">
+                    <strong>${rezervasyon.konum}:</strong> ${rezervasyon.not}
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+    
+    html += `
+        <hr>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0"><i class="bi bi-geo-alt"></i> Tüm Konumlardaki Stok Durumu</h6>
+            <small class="text-muted">${product.konumlar.length} konum</small>
+        </div>
+        
+        <!-- Mobile Card View for small screens -->
+        <div class="d-block d-lg-none">
+    `;
+    
+    if (product.konumlar && product.konumlar.length > 0) {
+        product.konumlar.forEach(location => {
+            const percentage = ((location.adet / product.toplam_adet) * 100).toFixed(1);
+            const progressColor = percentage > 50 ? 'bg-success' : percentage > 25 ? 'bg-warning' : 'bg-info';
+            const isCritical = location.adet <= 5;
+            const hasReservation = location.rezervasyon_notu && location.rezervasyon_notu.trim() !== '';
+            
+            html += `
+                <div class="card mb-2 border-start border-4 ${isCritical ? 'border-danger' : 'border-success'}">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0"><span class="badge bg-primary">${location.konum}</span></h6>
+                            <span class="fs-6 fw-bold px-2 py-1 rounded text-white ${isCritical ? 'bg-danger' : 'bg-success'}">
+                                ${location.adet}
+                            </span>
+                        </div>
+                        <div class="row">
+                            ${isAdmin ? `
+                            <div class="col-6">
+                                <small class="text-muted">Ağırlık</small><br>
+                                <span class="fw-bold">${location.toplam_kg} kg</span>
+                            </div>
+                            <div class="col-6">` : `
+                            <div class="col-12">`}
+                                <small class="text-muted">Oran</small><br>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar ${progressColor}" style="width: ${percentage}%"></div>
+                                </div>
+                                <small>${percentage}%</small>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <small class="text-muted">Uzunluk</small><br>
+                                <span style="background-color: white; color: black; font-family: Arial, sans-serif; padding: 2px 4px; border-radius: 4px; display: inline-block; min-width: 100%;">
+                                    ${location.uzunluk ? `${location.uzunluk} mm` : `-`}
+                                </span>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">MT/KG</small><br>
+                                <span style="background-color: white; color: black; font-family: Arial, sans-serif; padding: 2px 4px; border-radius: 4px; display: inline-block; min-width: 100%;">
+                                    ${location.mt_kg ? location.mt_kg : `-`}
+                                </span>
+                            </div>
+                        </div>
+                        ${isCritical ? `
+                            <div class="mt-2">
+                                <span class="badge bg-danger">
+                                    KRİTİK <i class="bi bi-exclamation-triangle ms-1"></i>
+                                </span>
+                            </div>
+                        ` : ''}
+                        ${hasReservation ? `
+                            <div class="mt-2">
+                                <span class="badge bg-warning text-dark" title="${location.rezervasyon_notu}">
+                                    <i class="bi bi-calendar-check"></i> Rezerve
+                                </span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        html += '<div class="alert alert-info">Bu ürün için stok bulunamadı</div>';
+    }
+    
+    html += `
+        </div>
+        
+        <!-- Desktop Table View for large screens -->
+        <div class="d-none d-lg-block">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-sm table-striped table-hover">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th style="min-width: 100px;">Konum</th>
+                            <th style="min-width: 80px;">Adet</th>
+                            ${isAdmin ? '<th style="min-width: 100px;">Ağırlık (kg)</th>' : ''}
+                            <th style="min-width: 80px;">Durum</th>
+                            <th style="min-width: 100px;">Rezervasyon</th>
+                            <th style="min-width: 100px;">Uzunluk</th>
+                            <th style="min-width: 100px;">MT/KG</th>
+                            <th style="min-width: 140px;">Oran</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    if (product.konumlar && product.konumlar.length > 0) {
+        product.konumlar.forEach(location => {
+            const percentage = ((location.adet / product.toplam_adet) * 100).toFixed(1);
+            const progressColor = percentage > 50 ? 'bg-success' : percentage > 25 ? 'bg-warning' : 'bg-info';
+            const isCritical = location.adet <= 5;
+            const hasReservation = location.rezervasyon_notu && location.rezervasyon_notu.trim() !== '';
+            
+            html += `
+                <tr class="${isCritical ? 'table-danger' : ''}">
+                    <td><span class="badge bg-primary">${location.konum}</span></td>
+                    <td>
+                        <span class="fs-6 fw-bold px-2 py-1 rounded text-white ${isCritical ? 'bg-danger' : 'bg-success'}">
+                            ${location.adet}
+                        </span>
+                    </td>
+                    ${isAdmin ? `<td><span class="badge bg-light text-dark">${location.toplam_kg}</span></td>` : ''}
+                    <td>
+                        ${isCritical ? 
+                            `<span class="badge bg-danger">
+                                KRİTİK <i class="bi bi-exclamation-triangle ms-1"></i>
+                            </span>` : 
+                            '<span class="text-muted">-</span>'
+                        }
+                    </td>
+                    <td>
+                        ${hasReservation ? 
+                            `<span class="badge bg-warning text-dark" title="${location.rezervasyon_notu}">
+                                <i class="bi bi-calendar-check"></i> Rezerve
+                            </span>` : 
+                            '<span class="text-muted">-</span>'
+                        }
+                    </td>
+                    <td style="background-color: white; color: black; font-family: Arial, sans-serif;">
+                        ${location.uzunluk ? `${location.uzunluk} mm` : `<span class="text-muted">-</span>`}
+                    </td>
+                    <td style="background-color: white; color: black; font-family: Arial, sans-serif;">
+                        ${location.mt_kg ? location.mt_kg : `<span class="text-muted">-</span>`}
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="progress" style="width: 80px; height: 15px; margin-right: 8px;">
+                                <div class="progress-bar ${progressColor}" role="progressbar" 
+                                     style="width: ${percentage}%" aria-valuenow="${percentage}" 
+                                     aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="fw-bold">${percentage}%</small>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    } else {
+        html += `<tr><td colspan="${isAdmin ? '6' : '5'}" class="text-center text-muted py-4">Bu ürün için stok bulunamadı</td></tr>`;
+    }
+    
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+// Excel export (basit versiyon)
+function exportToExcel() {
+    const table = document.getElementById('stockReportTable');
+    if (!table) {
+        alert('Export edilecek tablo bulunamadı!');
+        return;
+    }
+    
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const cols = row.querySelectorAll('td, th');
+        let csvRow = [];
+        
+        for (let j = 0; j < cols.length; j++) {
+            // Metin içeriklerini al ve CSV uygun hale getir
+            let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/(\s+)/gm, ' ');
+            // Virgül içeren değerleri tırnak içine al
+            if (data.includes(',')) {
+                data = '"' + data + '"';
+            }
+            csvRow.push(data);
+        }
+        
+        csv.push(csvRow.join(','));
+    }
+    
+    const csvString = csv.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'stok_raporu.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Modal kapatma fonksiyonları
+function closeProductModal() {
+    const modal = document.getElementById('productDetailModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function closeStockModal() {
+    const modal = document.getElementById('stockDetailModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// ESC tuşu ile modal kapatma
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeProductModal();
+        closeStockModal();
+    }
+});
+</script>
+{% endblock %}
