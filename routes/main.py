@@ -1046,10 +1046,10 @@ def stock_report():
                     'urun_adi': row['urun_adi'],
                     'renk': row['renk'],
                     'sistem_seri': row['sistem_seri'],
-                    'toplam_adet': row['toplam_adet'],
-                    'toplam_agirlik': row['toplam_agirlik'],
+                    'toplam_adet': row['toplam_adet'] or 0,
+                    'toplam_agirlik': row['toplam_agirlik'] or 0,
                     'kritik_stok_siniri': row['min_kritik_sinir'] or 5,
-                    'is_critical': row['toplam_adet'] <= (row['min_kritik_sinir'] or 5),
+                    'is_critical': (row['toplam_adet'] or 0) <= (row['min_kritik_sinir'] or 5),
                     'konumlar': [],
                     'uzunluk': row['uzunluk'],
                     'mt_kg': row['mt_kg']
@@ -1057,10 +1057,10 @@ def stock_report():
             
             grouped_products[key]['konumlar'].append({
                 'konum': row['konum'],
-                'adet': row['adet'],
-                'toplam_kg': row['toplam_kg'],
+                'adet': row['adet'] or 0,
+                'toplam_kg': row['toplam_kg'] or 0,
                 'kritik_stok_siniri': row['kritik_stok_siniri'] or 5,
-                'is_critical': row['adet'] <= (row['kritik_stok_siniri'] or 5),
+                'is_critical': (row['adet'] or 0) <= (row['kritik_stok_siniri'] or 5),
                 'uzunluk': row['uzunluk'],
                 'mt_kg': row['mt_kg']
             })
@@ -1141,8 +1141,8 @@ def stock_report():
         # Genel istatistikler
         stats = {
             'total_products': len(sorted_products),
-            'total_quantity': sum(p['toplam_adet'] for p in sorted_products),
-            'total_weight': sum(p['toplam_agirlik'] for p in sorted_products),
+            'total_quantity': sum(p['toplam_adet'] or 0 for p in sorted_products),
+            'total_weight': sum(p['toplam_agirlik'] or 0 for p in sorted_products),
             'total_locations': len(set(lok['konum'] for p in sorted_products for lok in p['konumlar']))
         }
         
