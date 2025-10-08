@@ -52,7 +52,7 @@ Modern web tabanlı stok yönetim sistemi. Excel tabanlı stok verilerinizi mode
 
 4. **Tarayıcıda açın**
    ```
-   http://localhost:5000
+   http://localhost:5001
    ```
 
 
