@@ -18,7 +18,11 @@ def create_app():
     if env == 'production':
         # Production configuration
         app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
-        app.config['DATABASE_PATH'] = os.environ.get('DATABASE_PATH', 'stok_takip_prod.db')
+        # Render için persistent disk kullan
+        if os.path.exists('/opt/render/project/src/data'):
+            app.config['DATABASE_PATH'] = '/opt/render/project/src/data/stok_takip_prod.db'
+        else:
+            app.config['DATABASE_PATH'] = os.environ.get('DATABASE_PATH', 'stok_takip_prod.db')
         app.config['DEBUG'] = False
     else:
         # Development configuration

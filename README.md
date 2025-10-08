@@ -75,6 +75,32 @@ Bu uygulama Railway'de kolayca deploy edilebilir:
 - ✅ Ücretsiz başlangıç kredisi ($5/ay)
 - ✅ Custom domain desteği
 
+### Render Deployment (Önerilen - Tamamen Ücretsiz)
+
+Bu uygulama Render'da tamamen ücretsiz deploy edilebilir:
+
+1. **Render hesabı oluşturun:** [render.com](https://render.com)
+2. **GitHub ile giriş yapın**
+3. **"New Web Service"** tıklayın
+4. **Bu GitHub repository'yi bağlayın**
+5. **Ayarlar:**
+   - **Build Command:** `./build.sh`
+   - **Start Command:** `gunicorn --bind 0.0.0.0:$PORT app:app`
+   - **Environment:** `Python 3`
+6. **Environment Variables:**
+   - `FLASK_ENV` = `production`
+   - `SECRET_KEY` = (Auto-generate seçin)
+7. **"Create Web Service"** tıklayın
+
+**Render Avantajları:**
+- ✅ Tamamen ücretsiz (kredi kartı gerekmez)
+- ✅ Otomatik HTTPS
+- ✅ Persistent disk (1GB)
+- ✅ PostgreSQL dahil ücretsiz
+- ✅ Git push ile otomatik deploy
+- ✅ Custom domain desteği
+- ✅ 750 saat/ay (sürekli çalışır)
+
 
 
 ## Kullanım
