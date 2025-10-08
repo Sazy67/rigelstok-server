@@ -64,4 +64,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Railway
+.railway/
 .vercel

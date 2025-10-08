@@ -55,6 +55,26 @@ Modern web tabanlı stok yönetim sistemi. Excel tabanlı stok verilerinizi mode
    http://localhost:5001
    ```
 
+### Railway Deployment
+
+Bu uygulama Railway'de kolayca deploy edilebilir:
+
+1. **Railway hesabı oluşturun:** [railway.app](https://railway.app)
+2. **GitHub ile giriş yapın**
+3. **"New Project" → "Deploy from GitHub repo"**
+4. **Bu repository'yi seçin**
+5. **Environment Variables ekleyin:**
+   - `FLASK_ENV`: `production`
+   - `SECRET_KEY`: Güvenli bir secret key
+6. **Deploy otomatik olarak başlar**
+
+**Railway Avantajları:**
+- ✅ Otomatik HTTPS
+- ✅ SQLite veritabanı korunur
+- ✅ Git push ile otomatik deploy
+- ✅ Ücretsiz başlangıç kredisi ($5/ay)
+- ✅ Custom domain desteği
+
 
 
 ## Kullanım
