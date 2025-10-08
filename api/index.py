@@ -1,27 +1,19 @@
-import sys
-import os
+from flask import Flask
 
-# Proje kök dizinini Python path'e ekle
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
+# Basit test uygulaması
+app = Flask(__name__)
 
-# Vercel environment variable'ını set et
-os.environ['VERCEL'] = '1'
-os.environ['FLASK_ENV'] = 'production'
+@app.route('/')
+def hello():
+    return '''
+    <h1>🚀 Vercel Flask Test</h1>
+    <p>Flask uygulaması Vercel'de çalışıyor!</p>
+    <p>Ana uygulama yakında aktif olacak...</p>
+    '''
 
-try:
-    # Ana uygulamayı import et
-    from app import create_app
-    
-    # Vercel için app instance'ı oluştur
-    app = create_app()
-    
-except Exception as e:
-    # Hata durumunda basit Flask app
-    from flask import Flask
-    app = Flask(__name__)
-    
-    @app.route('/')
-    def error():
-        return f"Import Error: {str(e)}", 500
+@app.route('/health')
+def health():
+    return {'status': 'ok', 'message': 'Vercel deployment working'}
+
+if __name__ == '__main__':
+    app.run()
