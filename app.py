@@ -19,8 +19,15 @@ def create_app():
     if is_vercel or env == 'production':
         # Vercel/Production configuration
         if is_vercel:
-            from vercel_config import VercelConfig
-            app.config.from_object(VercelConfig)
+            try:
+                from vercel_config import VercelConfig
+                app.config.from_object(VercelConfig)
+            except ImportError:
+                # Fallback Vercel config
+                app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-secret-key')
+                app.config['DATABASE_PATH'] = '/tmp/stok_takip_vercel.db'
+                app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
+                app.config['DEBUG'] = False
         else:
             app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
             app.config['DATABASE_PATH'] = os.environ.get('DATABASE_PATH', 'stok_takip_prod.db')
