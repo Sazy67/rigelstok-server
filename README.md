@@ -52,22 +52,10 @@ Modern web tabanlı stok yönetim sistemi. Excel tabanlı stok verilerinizi mode
 
 4. **Tarayıcıda açın**
    ```
-   http://localhost:5001
+   http://localhost:5000
    ```
 
-### Vercel Deployment
 
-Bu uygulama Vercel'de çalıştırılabilir:
-
-1. **GitHub repository'nizi Vercel'e bağlayın**
-2. **Environment variables ekleyin:**
-   - `SECRET_KEY`: Güvenli bir secret key
-   - `FLASK_ENV`: `production`
-3. **Deploy edin**
-
-Vercel otomatik olarak `vercel.json` konfigürasyonunu kullanacaktır.
-
-**Not:** Vercel'de SQLite veritabanı geçici dosya sisteminde (/tmp) saklanır ve her deployment'ta sıfırlanır. Production için PostgreSQL veya başka bir kalıcı veritabanı kullanmanız önerilir.
 
 ## Kullanım
 

@@ -14,32 +14,19 @@ def create_app():
     
     # Environment-based configuration
     env = os.environ.get('FLASK_ENV', 'development')
-    is_vercel = os.environ.get('VERCEL', False)
     
-    if is_vercel or env == 'production':
-        # Vercel/Production configuration
-        if is_vercel:
-            try:
-                from vercel_config import VercelConfig
-                app.config.from_object(VercelConfig)
-            except ImportError:
-                # Fallback Vercel config
-                app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-secret-key')
-                app.config['DATABASE_PATH'] = '/tmp/stok_takip_vercel.db'
-                app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
-                app.config['DEBUG'] = False
-        else:
-            app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
-            app.config['DATABASE_PATH'] = os.environ.get('DATABASE_PATH', 'stok_takip_prod.db')
-            app.config['DEBUG'] = False
-            app.config['UPLOAD_FOLDER'] = 'uploads'
+    if env == 'production':
+        # Production configuration
+        app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
+        app.config['DATABASE_PATH'] = os.environ.get('DATABASE_PATH', 'stok_takip_prod.db')
+        app.config['DEBUG'] = False
     else:
         # Development configuration
         app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
         app.config['DATABASE_PATH'] = 'stok_takip_dev.db'
         app.config['DEBUG'] = True
-        app.config['UPLOAD_FOLDER'] = 'uploads'
     
+    app.config['UPLOAD_FOLDER'] = 'uploads'
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
     
     # Upload klasörünü oluştur
@@ -69,11 +56,9 @@ def create_app():
     
     return app
 
-# Vercel için app instance'ı
-app = create_app()
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
+    app = create_app()
+    port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') != 'production'
     
     app.run(debug=debug, host='0.0.0.0', port=port)
