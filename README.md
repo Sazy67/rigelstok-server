@@ -101,6 +101,23 @@ Bu uygulama Render'da tamamen ücretsiz deploy edilebilir:
 - ✅ Custom domain desteği
 - ✅ 750 saat/ay (sürekli çalışır)
 
+### PythonAnywhere Deployment (Tamamen Ücretsiz - Kredi Kartı Yok)
+
+En güvenli ücretsiz seçenek:
+
+1. **PythonAnywhere hesabı:** [pythonanywhere.com](https://pythonanywhere.com)
+2. **"Create a Beginner account"** (Ücretsiz)
+3. **Detaylı rehber:** `PYTHONANYWHERE_DEPLOY.md` dosyasına bakın
+
+**PythonAnywhere Avantajları:**
+- ✅ **Hiçbir zaman kredi kartı istemez**
+- ✅ Python/Flask için özel platform
+- ✅ SQLite tam destek
+- ✅ SSH erişimi
+- ✅ Cron jobs
+- ✅ 512MB storage
+- ✅ Günlük otomatik restart
+
 
 
 ## Kullanım
