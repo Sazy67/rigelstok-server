@@ -6,10 +6,37 @@ from utils.excel_processor import ExcelProcessor, DatabaseImporter
 from utils.auth import UserManager, login_required, admin_required, get_current_user, is_admin, can_access_page
 import os
 import logging
+import unicodedata
 
 logger = logging.getLogger(__name__)
 
 main_bp = Blueprint('main', __name__)
+
+def normalize_turkish_text(text):
+    """
+    Türkçe karakterleri normalize eder ve büyük küçük harf duyarsız arama için hazırlar
+    """
+    if not text:
+        return ""
+    
+    # Türkçe karakter dönüşüm tablosu - hem büyük hem küçük harfler
+    turkish_chars = {
+        'ç': 'c', 'Ç': 'c',
+        'ğ': 'g', 'Ğ': 'g', 
+        'ı': 'i', 'I': 'i', 'İ': 'i', 'i': 'i',
+        'ö': 'o', 'Ö': 'o',
+        'ş': 's', 'Ş': 's',
+        'ü': 'u', 'Ü': 'u'
+    }
+    
+    # Önce Türkçe karakterleri dönüştür
+    for turkish_char, latin_char in turkish_chars.items():
+        text = text.replace(turkish_char, latin_char)
+    
+    # Sonra küçük harfe çevir
+    text = text.lower()
+    
+    return text
 
 # Initialize UserManager
 user_manager = None
@@ -263,13 +290,9 @@ def stock_list():
         if sort_order not in ['asc', 'desc']:
             sort_order = 'asc'
         
-        # WHERE clause oluşturma
+        # WHERE clause oluşturma (search hariç)
         where_conditions = []
         params = []
-        
-        if search:
-            where_conditions.append("(urun_kodu LIKE ? OR urun_adi LIKE ?)")
-            params.extend([f"%{search}%", f"%{search}%"])
         
         if location:
             where_conditions.append("konum = ?")
@@ -279,30 +302,69 @@ def stock_list():
             where_conditions.append("renk = ?")
             params.append(color)
             
-        if sistem_seri:
-            where_conditions.append("sistem_seri = ?")
-            params.append(sistem_seri)
+        # sistem_seri filtresini Python tarafında yapacağız
             
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
         
-        # ORDER BY clause
-        order_column = valid_sort_columns[sort_by]
-        order_clause = f"ORDER BY {order_column} {sort_order}"
-        
-        # Toplam kayıt sayısı
-        count_query = f"SELECT COUNT(*) as count FROM stoklar {where_clause}"
-        total = db.execute(count_query, params).fetchone()['count']
-        
-        # Stok kayıtları
+        # Tüm stok kayıtlarını al (search filtresini Python tarafında yapacağız)
         query = f'''
             SELECT urun_kodu, urun_adi, renk, sistem_seri, uzunluk, mt_kg, boy_kg, 
                    adet, toplam_kg, konum, kritik_stok_siniri
             FROM stoklar
             {where_clause}
-            {order_clause}
-            LIMIT ? OFFSET ?
         '''
-        stocks = db.execute(query, params + [per_page, offset]).fetchall()
+        all_stocks = db.execute(query, params).fetchall()
+        
+        # Python tarafında search filtresi uygula
+        if search:
+            search_normalized = normalize_turkish_text(search)
+            filtered_stocks = []
+            for stock in all_stocks:
+                urun_kodu_normalized = normalize_turkish_text(stock['urun_kodu'])
+                urun_adi_normalized = normalize_turkish_text(stock['urun_adi'])
+                if (search_normalized in urun_kodu_normalized or 
+                    search_normalized in urun_adi_normalized):
+                    filtered_stocks.append(stock)
+            all_stocks = filtered_stocks
+        
+        # Python tarafında sistem seri filtresi uygula
+        if sistem_seri:
+            sistem_seri_normalized = normalize_turkish_text(sistem_seri)
+            filtered_stocks = []
+            for stock in all_stocks:
+                # Sistem seri alanında tam eşleşme
+                sistem_seri_match = stock['sistem_seri'] == sistem_seri
+                # Ürün adında kısmi eşleşme (normalize edilmiş)
+                urun_adi_normalized = normalize_turkish_text(stock['urun_adi'])
+                urun_adi_match = sistem_seri_normalized in urun_adi_normalized
+                
+                if sistem_seri_match or urun_adi_match:
+                    filtered_stocks.append(stock)
+            all_stocks = filtered_stocks
+        
+        # Sıralama uygula
+        if sort_by in valid_sort_columns:
+            reverse_sort = (sort_order == 'desc')
+            if sort_by == 'urun_kodu':
+                all_stocks = sorted(all_stocks, key=lambda x: x['urun_kodu'] or '', reverse=reverse_sort)
+            elif sort_by == 'urun_adi':
+                all_stocks = sorted(all_stocks, key=lambda x: x['urun_adi'] or '', reverse=reverse_sort)
+            elif sort_by == 'renk':
+                all_stocks = sorted(all_stocks, key=lambda x: x['renk'] or '', reverse=reverse_sort)
+            elif sort_by == 'sistem_seri':
+                all_stocks = sorted(all_stocks, key=lambda x: x['sistem_seri'] or '', reverse=reverse_sort)
+            elif sort_by == 'adet':
+                all_stocks = sorted(all_stocks, key=lambda x: x['adet'] or 0, reverse=reverse_sort)
+            elif sort_by == 'toplam_kg':
+                all_stocks = sorted(all_stocks, key=lambda x: x['toplam_kg'] or 0, reverse=reverse_sort)
+            elif sort_by == 'konum':
+                all_stocks = sorted(all_stocks, key=lambda x: x['konum'] or '', reverse=reverse_sort)
+        
+        # Toplam kayıt sayısı
+        total = len(all_stocks)
+        
+        # Sayfalama uygula
+        stocks = all_stocks[offset:offset + per_page]
         
         # Her bir stok kaydı için ürün bazlı rezervasyon notunu al
         stocks_with_reservations = []
@@ -1024,18 +1086,28 @@ def stock_report():
         # Filtreleme uygula
         if search:
             filtered_products = {}
-            search_lower = search.lower()
+            # Türkçe karakterler için normalize edilmiş arama
+            search_normalized = normalize_turkish_text(search)
             for key, product in grouped_products.items():
-                if (search_lower in product['urun_kodu'].lower() or 
-                    search_lower in product['urun_adi'].lower()):
+                urun_kodu_normalized = normalize_turkish_text(product['urun_kodu'])
+                urun_adi_normalized = normalize_turkish_text(product['urun_adi'])
+                if (search_normalized in urun_kodu_normalized or 
+                    search_normalized in urun_adi_normalized):
                     filtered_products[key] = product
             grouped_products = filtered_products
         
-        # Add sistem seri filter
+        # Sistem seri filtresi - hem sistem_seri alanında hem de ürün adında ara
         if sistem_seri_filter:
             filtered_products = {}
+            sistem_seri_normalized = normalize_turkish_text(sistem_seri_filter)
             for key, product in grouped_products.items():
-                if product['sistem_seri'] == sistem_seri_filter:
+                # Sistem seri alanında tam eşleşme
+                sistem_seri_match = product['sistem_seri'] == sistem_seri_filter
+                # Ürün adında kısmi eşleşme (normalize edilmiş)
+                urun_adi_normalized = normalize_turkish_text(product['urun_adi'])
+                urun_adi_match = sistem_seri_normalized in urun_adi_normalized
+                
+                if sistem_seri_match or urun_adi_match:
                     filtered_products[key] = product
             grouped_products = filtered_products
         

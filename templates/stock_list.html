@@ -1048,6 +1048,122 @@ function createStockDetailHTML(product) {
     return html;
 }
 
+// Rezervasyon notu kaydet
+function saveReservationNote(urunKodu, renk, button) {
+    const input = button.previousElementSibling;
+    const note = input.value.trim();
+    
+    // Button'u disable et ve loading göster
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+    
+    const data = {
+        urun_kodu: urunKodu,
+        renk: renk || '',
+        note: note
+    };
+    
+    fetch('/api/rezervasyon-notu-kaydet', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Başarılı
+            input.style.backgroundColor = note ? '#fff3cd' : '';
+            input.style.color = note ? '#856404' : '';
+            input.style.fontWeight = note ? '500' : '';
+            
+            // Silme butonunu göster/gizle
+            const deleteButton = button.nextElementSibling;
+            if (note && deleteButton) {
+                deleteButton.style.display = 'inline-block';
+            } else if (!note && deleteButton) {
+                deleteButton.style.display = 'none';
+            }
+            
+            // Başarı mesajı
+            showToast('Rezervasyon notu kaydedildi', 'success');
+        } else {
+            showToast('Hata: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Rezervasyon notu kaydedilemedi', 'error');
+    })
+    .finally(() => {
+        // Button'u tekrar aktif et
+        button.disabled = false;
+        button.innerHTML = '<i class="bi bi-check"></i>';
+    });
+}
+
+// Rezervasyon notu sil
+function deleteReservationNote(urunKodu, renk, button) {
+    if (!confirm('Rezervasyon notunu silmek istediğinizden emin misiniz?')) {
+        return;
+    }
+    
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+    
+    const data = {
+        urun_kodu: urunKodu,
+        renk: renk || ''
+    };
+    
+    fetch('/api/rezervasyon-notu-sil', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Input'u temizle ve stilini sıfırla
+            const input = button.previousElementSibling.previousElementSibling;
+            input.value = '';
+            input.style.backgroundColor = '';
+            input.style.color = '';
+            input.style.fontWeight = '';
+            
+            // Silme butonunu gizle
+            button.style.display = 'none';
+            
+            showToast('Rezervasyon notu silindi', 'success');
+        } else {
+            showToast('Hata: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Rezervasyon notu silinemedi', 'error');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = '<i class="bi bi-trash"></i>';
+    });
+}
+
+// Toast mesaj göster
+function showToast(message, type = 'info') {
+    // Basit alert kullan (daha sonra toast sistemi eklenebilir)
+    if (type === 'success') {
+        alert('✓ ' + message);
+    } else if (type === 'error') {
+        alert('✗ ' + message);
+    } else {
+        alert(message);
+    }
+}
+
 // Modal kapat
 function closeModal() {
     const modal = document.getElementById('stockDetailModal');
