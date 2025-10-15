@@ -386,18 +386,19 @@ def stock_list():
         colors = db.execute('SELECT DISTINCT renk FROM stoklar WHERE renk IS NOT NULL ORDER BY renk').fetchall()
         sistem_seriler = db.execute('SELECT DISTINCT sistem_seri FROM stoklar WHERE sistem_seri IS NOT NULL ORDER BY sistem_seri').fetchall()
         
-        # Filtrelenmiş istatistikleri hesapla
+        # Filtrelenmiş istatistikleri hesapla (Python tarafında filtrelenen verilerden)
         stats = {}
         
-        # Filtrelenmiş toplam ürün çeşidi
-        product_count_query = f"SELECT COUNT(DISTINCT urun_kodu) as count FROM stoklar {where_clause}"
-        result = db.execute(product_count_query, params).fetchone()
-        stats['total_products'] = result['count'] if result else 0
+        # Filtrelenmiş toplam ürün çeşidi (unique ürün kodları)
+        unique_products = set()
+        total_weight_sum = 0
         
-        # Filtrelenmiş toplam ağırlık
-        weight_query = f"SELECT SUM(toplam_kg) as total FROM stoklar {where_clause}"
-        result = db.execute(weight_query, params).fetchone()
-        stats['total_weight'] = result['total'] if result and result['total'] else 0
+        for stock in all_stocks:
+            unique_products.add(stock['urun_kodu'])
+            total_weight_sum += stock['toplam_kg'] or 0
+        
+        stats['total_products'] = len(unique_products)
+        stats['total_weight'] = total_weight_sum
         
         # Sayfalama bilgileri
         has_prev = page > 1
